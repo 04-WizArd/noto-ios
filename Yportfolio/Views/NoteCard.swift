@@ -1,0 +1,122 @@
+//
+//  NoteCard.swift
+//  Yportfolio
+//
+//  Created by Jordi Jordi on 23/05/2026.
+//
+
+import SwiftUI
+
+struct NoteCard: View {
+    let note: Note
+    let isSelected: Bool
+    let namespace: Namespace.ID
+
+    @Environment(\.colorScheme) private var scheme
+
+    // MARK: - Body
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            cardBackground
+            contentStack
+        }
+        .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
+        .cardShadow(accent: note.accent, scheme: scheme)
+        .overlay(borderOverlay)
+    }
+
+    // MARK: - Subviews
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
+            .fill(DS.Material.card)
+            .background(
+                RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
+                    .fill(note.accent.opacity(scheme == .dark ? 0.15 : 0.07))
+            )
+    }
+
+    private var borderOverlay: some View {
+        RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
+            .strokeBorder(
+                Color.white.opacity(scheme == .dark ? 0.10 : 0.50),
+                lineWidth: 0.5
+            )
+    }
+
+    private var contentStack: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            dateRow
+                .padding(.bottom, DS.Spacing.xs + 2)
+
+            titleText
+                .padding(.bottom, DS.Spacing.xxs + 2)
+
+            snippetText
+
+            Spacer(minLength: DS.Spacing.sm)
+
+            footerBadge
+        }
+        .padding(DS.Spacing.md)
+    }
+
+    private var dateRow: some View {
+        HStack(spacing: DS.Spacing.xxs + 2) {
+            Circle()
+                .fill(note.accent.gradient)
+                .frame(width: 7, height: 7)
+            Text(note.formattedDate)
+                .font(DS.Typography.caption2())
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+        }
+    }
+
+    private var titleText: some View {
+        Text(note.title.isEmpty ? "Sans titre" : note.title)
+            .font(DS.Typography.subheadline())
+            .foregroundStyle(.primary)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var snippetText: some View {
+        Text(note.snippet.isEmpty ? "Appuyez pour modifier…" : note.snippet)
+            .font(DS.Typography.footnote())
+            .foregroundStyle(.secondary)
+            .lineLimit(3)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var footerBadge: some View {
+        HStack(spacing: DS.Spacing.xxs) {
+            Image(systemName: "note.text")
+                .font(DS.Typography.caption2())
+            Text("Note")
+                .font(DS.Typography.caption2().weight(.medium))
+        }
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, DS.Spacing.xs)
+        .padding(.vertical, DS.Spacing.xxs)
+        .background(Color.primary.opacity(0.06), in: Capsule())
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    ZStack {
+        Color(UIColor.systemGroupedBackground).ignoresSafeArea()
+    }
+    .overlay(
+        NoteCard(
+            note: Note.sample.first!,
+            isSelected: false,
+            namespace: Namespace().wrappedValue
+        )
+        .padding(DS.Spacing.xl)
+    )
+}
