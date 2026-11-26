@@ -60,6 +60,16 @@ final class NotesViewModel {
         return shouldDelete
     }
 
+    // MARK: - Pin
+
+    /// Pins or unpins a note, then saves.
+    /// `modifiedAt` is deliberately left untouched: pinning organises the list,
+    /// it is not an edit of the note's content (and must not reorder the date sort).
+    func togglePin(_ note: Note) throws {
+        note.isPinned.toggle()
+        try save()
+    }
+
     // MARK: - Delete
 
     func delete(_ note: Note) throws {

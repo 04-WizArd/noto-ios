@@ -62,6 +62,66 @@ struct NoteSortOrderTests {
         #expect(NoteSortOrder.dateCreated.sorted([first, second]).map(\.title) == ["Seconde", "Première"])
     }
 
+    // MARK: - Pinned grouping
+
+    /// Two pinned and two unpinned notes whose dates and titles disagree, so each
+    /// order gives a different result. "Bravo" (unpinned) is the most recently
+    /// modified note overall, yet must stay after the pinned ones.
+    private func mixedNotes(_ f: NotesFixture) -> [Note] {
+        [
+            f.insertNote(title: "Delta", isPinned: true,
+                         createdAt: base, modifiedAt: base.addingTimeInterval(5 * day)),
+            f.insertNote(title: "Charlie",
+                         createdAt: base.addingTimeInterval(2.5 * day), modifiedAt: base.addingTimeInterval(4 * day)),
+            f.insertNote(title: "Alpha", isPinned: true,
+                         createdAt: base.addingTimeInterval(3 * day), modifiedAt: base.addingTimeInterval(1 * day)),
+            f.insertNote(title: "Bravo",
+                         createdAt: base.addingTimeInterval(2 * day), modifiedAt: base.addingTimeInterval(6 * day)),
+        ]
+    }
+
+    @Test("Pinned notes come before the others", arguments: NoteSortOrder.allCases)
+    func pinnedFirst(order: NoteSortOrder) throws {
+        let f = try NotesFixture()
+
+        let groups = order.grouped(mixedNotes(f))
+
+        #expect(groups.pinned.map(\.title).sorted() == ["Alpha", "Delta"])
+        #expect(groups.pinned.allSatisfy { $0.isPinned })
+        #expect(groups.others.map(\.title).sorted() == ["Bravo", "Charlie"])
+        #expect(groups.others.allSatisfy { !$0.isPinned })
+    }
+
+    @Test("The selected order still applies inside each group",
+          arguments: zip(
+            [NoteSortOrder.dateModified, .dateCreated, .title],
+            [
+                (pinned: ["Delta", "Alpha"], others: ["Bravo", "Charlie"]),   // modified ↓
+                (pinned: ["Alpha", "Delta"], others: ["Charlie", "Bravo"]),   // created ↓
+                (pinned: ["Alpha", "Delta"], others: ["Bravo", "Charlie"]),   // title ↑
+            ]
+          ))
+    func orderInsideGroups(order: NoteSortOrder, expected: (pinned: [String], others: [String])) throws {
+        let f = try NotesFixture()
+
+        let groups = order.grouped(mixedNotes(f))
+
+        #expect(groups.pinned.map(\.title) == expected.pinned)
+        #expect(groups.others.map(\.title) == expected.others)
+    }
+
+    @Test("Without pinned notes, grouping is the plain sort", arguments: NoteSortOrder.allCases)
+    func noPinnedNotes(order: NoteSortOrder) throws {
+        let f = try NotesFixture()
+        let notes = mixedNotes(f)
+        notes.forEach { $0.isPinned = false }
+
+        let groups = order.grouped(notes)
+
+        #expect(groups.pinned.isEmpty)
+        #expect(groups.others.map(\.title) == order.sorted(notes).map(\.title))
+    }
+
     @Test("Sorting never drops or duplicates notes", arguments: NoteSortOrder.allCases)
     func sortKeepsAllNotes(order: NoteSortOrder) throws {
         let f = try NotesFixture()

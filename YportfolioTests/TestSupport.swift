@@ -39,10 +39,22 @@ struct NotesFixture {
         try ModelContext(container).fetch(FetchDescriptor<Note>())
     }
 
+    /// Creates a note through the view model, gives it a title and saves it
+    /// (the normal "edit then leave the editor" path).
+    func savedNote(_ title: String) throws -> Note {
+        let note = viewModel.createNote()
+        note.title = title
+        try viewModel.finishEditing(note)
+        return note
+    }
+
     /// Inserts a note with explicit dates (for sort tests).
     @discardableResult
-    func insertNote(title: String = "Note", body: String = "", createdAt: Date, modifiedAt: Date? = nil) -> Note {
-        let note = Note(title: title, body: body, createdAt: createdAt, modifiedAt: modifiedAt)
+    func insertNote(
+        title: String = "Note", body: String = "", isPinned: Bool = false,
+        createdAt: Date, modifiedAt: Date? = nil
+    ) -> Note {
+        let note = Note(title: title, body: body, isPinned: isPinned, createdAt: createdAt, modifiedAt: modifiedAt)
         context.insert(note)
         return note
     }

@@ -81,6 +81,73 @@ struct NotesViewModelTests {
         #expect(note.modifiedAt > note.createdAt)
     }
 
+    // MARK: - Pin
+
+    @Test("Pinning a note sets isPinned and saves it")
+    func pinNote() throws {
+        let f = try NotesFixture()
+        let note = try f.savedNote("À épingler")
+
+        try f.viewModel.togglePin(note)
+
+        #expect(note.isPinned)
+        #expect(try f.fetchSavedNotes().first?.isPinned == true)
+    }
+
+    @Test("Unpinning a pinned note clears isPinned and saves it")
+    func unpinNote() throws {
+        let f = try NotesFixture()
+        let note = try f.savedNote("Épinglée")
+        try f.viewModel.togglePin(note)
+
+        try f.viewModel.togglePin(note)
+
+        #expect(!note.isPinned)
+        #expect(try f.fetchSavedNotes().first?.isPinned == false)
+    }
+
+    @Test("Pinning and unpinning never change modifiedAt or createdAt")
+    func pinKeepsDates() throws {
+        let f = try NotesFixture()
+        let note = try f.savedNote("Dates")
+        let createdAt = note.createdAt
+        let modifiedAt = note.modifiedAt
+
+        f.clock.advance(by: 3_600)
+        try f.viewModel.togglePin(note)
+        f.clock.advance(by: 3_600)
+        try f.viewModel.togglePin(note)
+        try f.viewModel.togglePin(note)
+
+        let saved = try #require(try f.fetchSavedNotes().first)
+        #expect(saved.isPinned)
+        #expect(saved.createdAt == createdAt)
+        #expect(saved.modifiedAt == modifiedAt)
+    }
+
+    @Test("Toggling pins never loses or duplicates notes")
+    func pinTogglingKeepsAllNotes() throws {
+        let f = try NotesFixture()
+        let titles = (0..<6).map { "Note \($0)" }
+        let notes = try titles.map { try f.savedNote($0) }
+
+        for index in [0, 2, 4, 2, 5, 5] {
+            try f.viewModel.togglePin(notes[index])
+        }
+
+        let saved = try f.fetchSavedNotes()
+        #expect(saved.count == titles.count)
+        #expect(Set(saved.map(\.title)) == Set(titles))
+        #expect(saved.filter(\.isPinned).map(\.title).sorted() == ["Note 0", "Note 4"])
+
+        for order in NoteSortOrder.allCases {
+            let groups = order.grouped(saved)
+            let displayed = groups.pinned + groups.others
+            #expect(displayed.count == titles.count)
+            #expect(Set(displayed.map(\.persistentModelID)).count == titles.count)
+        }
+    }
+
     // MARK: - Delete
 
     @Test("Deleting a note removes it from the store")
@@ -109,6 +176,33 @@ struct NotesViewModelTests {
         try f.viewModel.delete(Array(notes.prefix(2)))
 
         #expect(try f.fetchSavedNotes().map(\.title) == ["Note 3"])
+    }
+
+    @Test("Deleting a multi-selection removes pinned and unpinned notes and keeps the rest")
+    func deleteMixedSelection() throws {
+        let f = try NotesFixture()
+        let pinnedKept = try f.savedNote("Épinglée gardée")
+        let pinnedDeleted = try f.savedNote("Épinglée supprimée")
+        let deleted = try f.savedNote("Supprimée")
+        _ = try f.savedNote("Gardée")
+        try f.viewModel.togglePin(pinnedKept)
+        try f.viewModel.togglePin(pinnedDeleted)
+
+        try f.viewModel.delete([pinnedDeleted, deleted])
+
+        let saved = try f.fetchSavedNotes()
+        #expect(Set(saved.map(\.title)) == ["Épinglée gardée", "Gardée"])
+        #expect(saved.first { $0.title == "Épinglée gardée" }?.isPinned == true)
+    }
+
+    @Test("Deleting an empty selection changes nothing")
+    func deleteEmptySelection() throws {
+        let f = try NotesFixture()
+        _ = try f.savedNote("Seule")
+
+        try f.viewModel.delete([Note]())
+
+        #expect(try f.fetchSavedNotes().map(\.title) == ["Seule"])
     }
 
     @Test("Deleting from the editor removes even a note with content")

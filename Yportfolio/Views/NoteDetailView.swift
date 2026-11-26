@@ -114,6 +114,8 @@ struct NoteDetailView: View {
         }
     }
 
+    /// Only working actions are shown. `upcomingTools` and `composeButton` are
+    /// kept but hidden until they are implemented.
     private var bottomBarContent: some View {
         HStack(spacing: 0) {
             // Destructive action
@@ -126,26 +128,28 @@ struct NoteDetailView: View {
             .accessibilityLabel("Supprimer la note")
 
             Spacer()
-
-            // Formatting shortcuts (UI only — future)
-            HStack(spacing: DS.Spacing.xl) {
-                toolbarIcon("checklist", label: "Liste de contrôle")
-                toolbarIcon("camera",    label: "Ajouter une photo")
-                toolbarIcon("a.magnify", label: "Formatage du texte")
-            }
-            .foregroundStyle(.secondary)
-
-            Spacer()
-
-            // Compose new note
-            Button {
-                // Handled at ContentView level (UI only here)
-            } label: {
-                Image(systemName: "square.and.pencil")
-            }
-            .accessibilityLabel("Nouvelle note")
         }
         .font(.system(size: 19))
+    }
+
+    /// Hidden: checklist, photo and formatting are not implemented yet.
+    private var upcomingTools: some View {
+        HStack(spacing: DS.Spacing.xl) {
+            toolbarIcon("checklist", label: "Liste de contrôle")
+            toolbarIcon("camera",    label: "Ajouter une photo")
+            toolbarIcon("a.magnify", label: "Formatage du texte")
+        }
+        .foregroundStyle(.secondary)
+    }
+
+    /// Hidden: creating a note from the editor is not wired yet
+    /// (notes are created from the list's compose button).
+    private var composeButton: some View {
+        Button {
+        } label: {
+            Image(systemName: "square.and.pencil")
+        }
+        .accessibilityLabel("Nouvelle note")
     }
 
     // MARK: - Helpers

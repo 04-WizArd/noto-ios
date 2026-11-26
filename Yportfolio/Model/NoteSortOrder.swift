@@ -37,4 +37,11 @@ enum NoteSortOrder: String, CaseIterable, Identifiable {
             }
         }
     }
+
+    /// Splits notes into pinned and other notes, each group sorted by this order.
+    /// Pinned notes are always displayed first.
+    func grouped(_ notes: [Note]) -> (pinned: [Note], others: [Note]) {
+        let ordered = sorted(notes)
+        return (ordered.filter(\.isPinned), ordered.filter { !$0.isPinned })
+    }
 }
