@@ -10,7 +10,6 @@ import SwiftData
 struct NoteCard: View {
     let note: Note
     var slot: RhythmLayout.Slot = .tall
-    var isSelected = false
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -46,10 +45,6 @@ struct NoteCard: View {
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: slot == .tall ? .infinity : nil, alignment: .topLeading)
         .background(DS.Surface.tint(note.accent.color, colorScheme), in: shape)
-        .overlay {
-            shape.strokeBorder(Color.accentColor, lineWidth: 3)
-                .opacity(isSelected ? 1 : 0)
-        }
         .contentShape(shape)
         .accessibilityElement(children: .combine)
     }

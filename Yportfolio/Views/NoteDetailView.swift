@@ -99,7 +99,7 @@ struct NoteDetailView: View {
                 viewModel.attempt { try $0.togglePin(note) }
             } label: {
                 Label(note.isPinned ? "Désépingler" : "Épingler",
-                      systemImage: note.isPinned ? "pin.fill" : "pin")
+                      systemImage: note.isPinned ? "bookmark.fill" : "bookmark")
                     .contentTransition(.symbolEffect(.replace))
             }
 
@@ -157,7 +157,7 @@ struct NoteDetailView: View {
     @ViewBuilder
     private var pinnedChip: some View {
         if note.isPinned {
-            Label("Épinglée", systemImage: "pin.fill")
+            Label("Épinglée", systemImage: "bookmark.fill")
                 .labelStyle(.titleAndIcon)
                 .padding(.horizontal, DS.Spacing.xs)
                 .padding(.vertical, 3)

@@ -1,11 +1,11 @@
 import SwiftUI
 import SwiftData
 
-/// List presentation: the home header, then full-width note cards in two groups
-/// ("Épinglées", "Notes"). Native `List` for swipe actions and cell reuse.
+/// List presentation: the home header, then full-width note cards under an
+/// optional section label. Native `List` for swipe actions and cell reuse.
 struct NotesListView<Header: View>: View {
-    let pinned: [Note]
-    let others: [Note]
+    let notes: [Note]
+    var label: String? = nil
     let isSelecting: Bool
     @Binding var selection: Set<Note.ID>
     @Binding var isHeaderCollapsed: Bool
@@ -17,8 +17,6 @@ struct NotesListView<Header: View>: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var hasPinned: Bool { !pinned.isEmpty }
-
     var body: some View {
         List {
             header
@@ -26,19 +24,11 @@ struct NotesListView<Header: View>: View {
                                           bottom: DS.Spacing.lg, trailing: DS.Spacing.screen))
                 .plainListRow()
 
-            // Both sections always exist (labels only when something is pinned), so a
-            // note moving in or out of "Épinglées" keeps its identity and animates as a move.
             Section {
-                if hasPinned {
-                    label(SectionLabel(title: "Épinglées", systemImage: "pin.fill", count: pinned.count))
+                if let label, !notes.isEmpty {
+                    sectionLabel(SectionLabel(title: label, count: notes.count))
                 }
-                ForEach(pinned, content: row)
-            }
-            Section {
-                if hasPinned && !others.isEmpty {
-                    label(SectionLabel(title: "Notes", count: others.count))
-                }
-                ForEach(others, content: row)
+                ForEach(notes, content: row)
             }
         }
         .listStyle(.plain)
@@ -49,9 +39,9 @@ struct NotesListView<Header: View>: View {
         .tracksHeaderCollapse($isHeaderCollapsed)
     }
 
-    private func label(_ label: SectionLabel) -> some View {
+    private func sectionLabel(_ label: SectionLabel) -> some View {
         label
-            .listRowInsets(EdgeInsets(top: DS.Spacing.md, leading: DS.Spacing.screen + 4,
+            .listRowInsets(EdgeInsets(top: DS.Spacing.xs, leading: DS.Spacing.screen + 4,
                                       bottom: DS.Spacing.xs, trailing: DS.Spacing.screen))
             .plainListRow()
     }
@@ -83,7 +73,7 @@ struct NotesListView<Header: View>: View {
                     onTogglePin(note)
                 } label: {
                     Label(note.isPinned ? "Désépingler" : "Épingler",
-                          systemImage: note.isPinned ? "pin.slash.fill" : "pin.fill")
+                          systemImage: note.isPinned ? "bookmark.slash.fill" : "bookmark.fill")
                 }
                 .tint(.orange)
             }

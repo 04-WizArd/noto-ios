@@ -40,12 +40,30 @@ enum DS {
         static let symbolSize: CGFloat = 17
         /// Small circular control living on cards (pin / selection).
         static let cardBadge: CGFloat = 32
+        /// Home top row: avatar and the trailing circle share this diameter.
+        static let headerCircle: CGFloat = 56
+    }
+
+    // ── Home dock (bottom floating bar) ───────────────────────────────
+    enum Dock {
+        /// Diameter of the two large buttons (compose, search).
+        static let button: CGFloat = 84
+        /// Same buttons when vertical space is scarce (iPhone landscape).
+        static let compactButton: CGFloat = 56
+        /// Inset of the glass capsule around them, and gap between them.
+        static let inset: CGFloat = 6
+        /// Diameter of the secondary circle beside the capsule.
+        static let accessory: CGFloat = 48
     }
 
     // ── Corner radii ──────────────────────────────────────────────────
     enum Radius {
         static let card: CGFloat = 28
         static let row: CGFloat = 22
+        /// Home dashboard cards and the capture card.
+        static let hero: CGFloat = 32
+        /// Line pills inside the featured card.
+        static let pill: CGFloat = 18
     }
 
     // ── Typography ────────────────────────────────────────────────────
@@ -55,6 +73,8 @@ enum DS {
         /// Base size of the display titles (home + editor), scaled with Dynamic Type.
         static let displaySize: CGFloat = 40
         static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .bold) }
+        /// Base size of the home hero title ("Vos notes !").
+        static let heroSize: CGFloat = 46
 
         static let sectionLabel = Font.footnote.weight(.semibold)
         static let rowTitle     = Font.headline
@@ -71,6 +91,10 @@ enum DS {
         static let background = Color(uiColor: .systemBackground)
         /// Neutral raised surface (list cards, chips, badges).
         static let raised = Color(uiColor: .secondarySystemBackground)
+        /// Surface nested on a raised card (white in Light Mode, a lighter grey in Dark Mode).
+        static let inset = Color(uiColor: .tertiarySystemBackground)
+        /// Hairline outline of unselected pills and quiet circles.
+        static let hairline = Color.primary.opacity(0.14)
 
         /// Soft, note-specific card colour: a pastel in Light Mode,
         /// a deep tone in Dark Mode. Text on top stays `.primary`.

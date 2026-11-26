@@ -1,86 +1,114 @@
 import SwiftUI
 
-/// Home screen identity block, scrolling with the content:
-/// a large display title with the note count, then the sort chips.
-/// (The greeting / date line lives in `HomeTopBar`, which stays on screen.)
+/// Home hero block, scrolling with the content: the large "Vos notes !" title,
+/// then the filter chips ("Toutes" with the note count, "Épinglées", "Récentes").
+/// (Avatar and greeting live in `HomeTopBar`, which stays on screen.)
 struct HomeHeader: View {
-    let count: Int
-    @Binding var sortOrder: NoteSortOrder
-    var showsSort = true
+    let totalCount: Int
+    @Binding var filter: NoteFilter
+    var showsFilters = true
 
-    @ScaledMetric(relativeTo: .largeTitle) private var titleSize = DS.Typography.displaySize
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Namespace private var chipNamespace
+    @ScaledMetric(relativeTo: .largeTitle) private var titleSize = DS.Typography.heroSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-            HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.sm) {
-                Text("Mes notes")
-                    .font(DS.Typography.display(titleSize))
-                    .tracking(-0.8)
-                    .foregroundStyle(.primary)
-                    .accessibilityAddTraits(.isHeader)
+            // Narrow no-break space before "!" (French typography).
+            Text("Vos notes\u{202F}!")
+                .font(DS.Typography.display(titleSize))
+                .tracking(-1)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .accessibilityAddTraits(.isHeader)
 
-                if count > 0 {
-                    Text(count, format: .number)
-                        .font(.subheadline.weight(.semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                        .contentTransition(.numericText(value: Double(count)))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(DS.Surface.raised, in: Capsule())
-                        .accessibilityLabel("\(count) note\(count == 1 ? "" : "s")")
-                }
-            }
-            .animation(DS.Motion.quick(reduceMotion), value: count)
-
-            if showsSort {
-                sortChips
+            if showsFilters {
+                FilterChips(filter: $filter, totalCount: totalCount)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+}
 
-    /// Sort options as chips (visible, one tap) rather than buried in a menu.
-    /// The selected chip's fill slides between chips.
-    private var sortChips: some View {
-        ScrollView(.horizontal) {
+/// Three pill filters spanning the content width. The selected pill sits on one
+/// piece of Liquid Glass that slides from chip to chip; the others are hairline outlines.
+struct FilterChips: View {
+    @Binding var filter: NoteFilter
+    let totalCount: Int
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var glassNamespace
+
+    var body: some View {
+        // One row filling the width when it fits; scrolls horizontally at large text sizes.
+        ViewThatFits(in: .horizontal) {
+            chips(stretch: true)
+            ScrollView(.horizontal) {
+                chips(stretch: false)
+            }
+            .scrollIndicators(.hidden)
+            .scrollClipDisabled()
+        }
+    }
+
+    private func chips(stretch: Bool) -> some View {
+        HStack(spacing: DS.Spacing.xs) {
+            ForEach(NoteFilter.allCases) { option in
+                chip(option)
+                    .frame(maxWidth: stretch && option != .all ? .infinity : nil)
+                    // "Toutes" + its count never truncates; the others give way.
+                    .fixedSize(horizontal: option == .all, vertical: false)
+            }
+        }
+    }
+
+    /// "Toutes" hugs its content; the other chips share the remaining width.
+    private func stretchesLabel(_ option: NoteFilter) -> Bool { option != .all }
+
+    private func chip(_ option: NoteFilter) -> some View {
+        let isSelected = option == filter
+        return Button {
+            withAnimation(DS.Motion.morph(reduceMotion)) { filter = option }
+        } label: {
             HStack(spacing: DS.Spacing.xs) {
-                ForEach(NoteSortOrder.allCases) { order in
-                    let isSelected = order == sortOrder
-                    Button {
-                        withAnimation(DS.Motion.morph(reduceMotion)) { sortOrder = order }
-                    } label: {
-                        Text(order.shortLabel)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(isSelected ? DS.Surface.background : Color.primary)
-                            .padding(.horizontal, DS.Spacing.md)
-                            .frame(minHeight: 36)
-                            .background {
-                                if isSelected {
-                                    Capsule()
-                                        .fill(Color.primary)
-                                        .matchedGeometryEffect(id: "selectedChip", in: chipNamespace)
-                                } else {
-                                    Capsule().strokeBorder(Color.primary.opacity(0.14), lineWidth: 1)
-                                }
-                            }
-                            .contentShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Trier par \(order.label.lowercased())")
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                Text(option.title)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+                if option == .all {
+                    Text(totalCount, format: .number)
+                        .font(.caption.weight(.bold))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.accentColor)
+                        .contentTransition(.numericText(value: Double(totalCount)))
+                        .frame(minWidth: 26, minHeight: 26)
+                        .padding(.horizontal, totalCount > 99 ? 4 : 0)
+                        .background(Color.accentColor.opacity(0.16), in: Capsule())
+                }
+            }
+            .lineLimit(1)
+            .padding(.horizontal, DS.Spacing.md)
+            .frame(maxWidth: stretchesLabel(option) ? .infinity : nil, minHeight: 48)
+            .contentShape(Capsule())
+            .background {
+                if isSelected {
+                    Capsule()
+                        .fill(.clear)
+                        // Neutral tint: on a plain white / black background, untinted
+                        // glass is almost invisible and the selection would not read.
+                        .glassEffect(.regular.tint(Color.primary.opacity(0.1)), in: .capsule)
+                        .matchedGeometryEffect(id: "selectedFilter", in: glassNamespace)
+                } else {
+                    Capsule().strokeBorder(DS.Surface.hairline, lineWidth: 1)
                 }
             }
         }
-        .scrollIndicators(.hidden)
-        .scrollClipDisabled()
+        .buttonStyle(.card)
+        .accessibilityLabel(option == .all ? "\(option.title), \(totalCount) note\(totalCount == 1 ? "" : "s")" : option.title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
 #Preview {
-    @Previewable @State var order = NoteSortOrder.dateModified
-    HomeHeader(count: 12, sortOrder: $order)
+    @Previewable @State var filter = NoteFilter.all
+    HomeHeader(totalCount: 23, filter: $filter)
         .padding()
 }

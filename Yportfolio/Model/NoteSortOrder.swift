@@ -16,15 +16,6 @@ enum NoteSortOrder: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Compact label for the sort chips on the home screen.
-    var shortLabel: String {
-        switch self {
-        case .dateModified: return "Récentes"
-        case .dateCreated:  return "Création"
-        case .title:        return "A–Z"
-        }
-    }
-
     var icon: String {
         switch self {
         case .dateModified: return "clock.arrow.circlepath"

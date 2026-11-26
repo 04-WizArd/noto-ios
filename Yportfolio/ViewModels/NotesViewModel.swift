@@ -40,6 +40,19 @@ final class NotesViewModel {
         return note
     }
 
+    /// Quick capture from the home screen: saves a note whose title is `text`.
+    /// Blank text creates nothing.
+    /// - Returns: the saved note, or `nil` when `text` is blank.
+    @discardableResult
+    func capture(_ text: String, accent: NoteAccent = .random()) throws -> Note? {
+        let title = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return nil }
+        let note = createNote(accent: accent)
+        note.title = title
+        try save()
+        return note
+    }
+
     // MARK: - Edit
 
     /// Records a real edit of the title or body. `createdAt` is never touched.

@@ -47,6 +47,30 @@ struct NotesViewModelTests {
         #expect(saved.modifiedAt == f.clock.now)
     }
 
+    // MARK: - Quick capture
+
+    @Test("Capturing text saves a note titled with the trimmed text")
+    func captureSavesNote() throws {
+        let f = try NotesFixture()
+
+        let note = try f.viewModel.capture("  Appeler Léa \n", accent: .mint)
+
+        #expect(note?.title == "Appeler Léa")
+        #expect(note?.body.isEmpty == true)
+        #expect(note?.accent == .mint)
+        #expect(note?.createdAt == f.clock.now)
+        #expect(try f.fetchSavedNotes().map(\.title) == ["Appeler Léa"])
+    }
+
+    @Test("Capturing blank text creates nothing",
+          arguments: ["", "   ", "\n\t "])
+    func captureIgnoresBlankText(text: String) throws {
+        let f = try NotesFixture()
+
+        #expect(try f.viewModel.capture(text) == nil)
+        #expect(try f.context.fetch(FetchDescriptor<Note>()).isEmpty)
+    }
+
     // MARK: - Dates
 
     @Test("createdAt never changes when the note is edited")

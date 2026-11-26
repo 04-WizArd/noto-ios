@@ -74,3 +74,43 @@ struct NoteHasContentTests {
         #expect(note.hasContent)
     }
 }
+
+@MainActor
+@Suite("Note highlights")
+struct NoteHighlightsTests {
+
+    private func highlights(_ body: String, limit: Int = 3) -> [String] {
+        Note(body: body).highlights(limit: limit)
+    }
+
+    @Test("Body lines become highlights, list markers and blank lines removed")
+    func lines() {
+        #expect(highlights("- acheter du pain\n\n• Sport\n* Investir\nQuatrième") ==
+                ["Acheter du pain", "Sport", "Investir"])
+    }
+
+    @Test("A single comma-separated line is split into items")
+    func commaList() {
+        #expect(highlights("Pommes, lait d’amande, pâtes, tomates cerises…") ==
+                ["Pommes", "Lait d’amande", "Pâtes"])
+    }
+
+    @Test("A single paragraph is split into sentences")
+    func sentences() {
+        #expect(highlights("Itérer. Tester puis polir. Recommencer.", limit: 5) ==
+                ["Itérer", "Tester puis polir", "Recommencer"])
+    }
+
+    @Test("A blank body has no highlights")
+    func blank() {
+        #expect(highlights("  \n \t").isEmpty)
+    }
+}
+
+extension NoteHighlightsTests {
+    @Test("Sentences win over commas inside a paragraph")
+    func sentencesBeforeCommas() {
+        #expect(highlights("Iterate, test, and polish. The key is detail.") ==
+                ["Iterate, test, and polish", "The key is detail"])
+    }
+}

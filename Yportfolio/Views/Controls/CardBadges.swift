@@ -8,7 +8,7 @@ struct PinToggle: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: isPinned ? "pin.fill" : "pin")
+            Image(systemName: isPinned ? "bookmark.fill" : "bookmark")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(isPinned ? DS.Surface.background : Color.secondary)
                 .contentTransition(.symbolEffect(.replace))

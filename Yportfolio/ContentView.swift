@@ -3,10 +3,13 @@ import SwiftData
 
 /// Notes home screen.
 ///
-/// Owns the screen state (search, sort, layout, selection, navigation) and composes:
-/// - `HomeTopBar` (floating): greeting / compact title + glass control island;
-/// - the content: `NotesListView` or `NotesGalleryView`, both starting with `HomeHeader`;
-/// - `HomeBottomBar` (floating): glass search + prominent compose, or selection actions.
+/// Owns the screen state (filter, search, sort, layout, selection, navigation) and composes:
+/// - `HomeTopBar` (floating): avatar, greeting + glass options circle;
+/// - the content, scrolling: `HomeHeader` (hero title, filter chips), `HomeDashboard`
+///   (the first three notes as featured cards), `CapturePromptCard`, then the other
+///   notes in `NotesListView` or `NotesGalleryView`;
+/// - `HomeBottomBar` (floating): the dock (compose, search, layout), the search
+///   field, or the selection actions.
 /// The navigation bar is hidden; navigation itself stays native (`NavigationStack`,
 /// zoom transitions, interactive dismiss).
 struct ContentView: View {
@@ -22,8 +25,14 @@ struct ContentView: View {
     @State private var searchText  = ""
     @State private var sortOrder   = NoteSortOrder.dateModified
     @State private var viewStyle   = NoteViewStyle.list
+    @State private var filter      = NoteFilter.all
     @State private var showFilters = false
+    @State private var isSearching = false
     @FocusState private var isSearchFocused: Bool
+
+    // Quick capture
+    @State private var captureText = ""
+    @FocusState private var isCaptureFocused: Bool
 
     // Selection mode
     @State private var isSelecting = false
@@ -39,24 +48,31 @@ struct ContentView: View {
     // Haptic triggers
     @State private var pinFeedback = 0
     @State private var deleteFeedback = 0
+    @State private var captureFeedback = 0
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // MARK: Derived
 
+    /// Notes matching the filter chip and the search text.
     private var filteredNotes: [Note] {
-        guard !searchText.isEmpty else { return notes }
+        let matching = filter.apply(to: notes)
+        guard !searchText.isEmpty else { return matching }
         let q = searchText
-        return notes.filter {
+        return matching.filter {
             $0.title.localizedCaseInsensitiveContains(q) ||
             $0.body.localizedCaseInsensitiveContains(q)
         }
     }
 
-    /// Visible notes: pinned first, the selected sort applied inside each group.
-    private var groupedNotes: (pinned: [Note], others: [Note]) {
-        sortOrder.grouped(filteredNotes)
+    /// Visible notes in display order: pinned first, the selected sort inside each group.
+    private var orderedNotes: [Note] {
+        let groups = sortOrder.grouped(filteredNotes)
+        return groups.pinned + groups.others
     }
+
+    /// Search results are a plain list: no dashboard, no capture card.
+    private var showsDashboard: Bool { searchText.isEmpty }
 
     /// Selected notes that are still visible (a search can hide part of the selection).
     private var selectedNotes: [Note] {
@@ -72,9 +88,18 @@ struct ContentView: View {
     var body: some View {
         NavigationStack(path: $path) {
             content
+                // No band behind the dock: its controls float directly over the content.
+                // (The top keeps the system edge effect, for the header's legibility.)
+                .scrollEdgeEffectHidden(true, for: .bottom)
                 .background(DS.Surface.background.ignoresSafeArea())
                 .safeAreaBar(edge: .top) { topBar }
-                .safeAreaBar(edge: .bottom) { bottomBar }
+                .safeAreaBar(edge: .bottom) {
+                    // Out of the way while typing a quick note.
+                    if !isCaptureFocused {
+                        bottomBar
+                            .transition(.opacity)
+                    }
+                }
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: Note.self) { note in
                     NoteDetailView(note: note)
@@ -87,6 +112,7 @@ struct ContentView: View {
         .sensoryFeedback(.selection, trigger: selection)
         .sensoryFeedback(.impact(weight: .light), trigger: pinFeedback)
         .sensoryFeedback(.impact(weight: .medium), trigger: deleteFeedback)
+        .sensoryFeedback(.success, trigger: captureFeedback)
         // Persistence failures reported by NotesViewModel (from any screen)
         .alert("Enregistrement impossible", isPresented: isShowingError) {
             Button("OK", role: .cancel) {}
@@ -95,7 +121,10 @@ struct ContentView: View {
         }
         // Nothing left to select (e.g. the last notes were just deleted).
         .onChange(of: notes.isEmpty) { _, isEmpty in
-            if isEmpty { endSelection() }
+            if isEmpty {
+                endSelection()
+                filter = .all
+            }
         }
         // Once back on the home screen, a composed note zooms from its own card next time.
         .onChange(of: path.isEmpty) { _, isEmpty in
@@ -111,47 +140,76 @@ struct ContentView: View {
 
     @ViewBuilder
     private var content: some View {
-        let groups = groupedNotes
+        let ordered = orderedNotes
+        let featured = showsDashboard ? Array(ordered.prefix(HomeDashboard.maxCount)) : []
+        let remaining = Array(ordered.dropFirst(featured.count))
+        let label = showsDashboard ? "Autres notes" : "Résultats"
         ZStack {
-            if notes.isEmpty || filteredNotes.isEmpty {
+            if ordered.isEmpty {
                 messageContent
                     .transition(.opacity)
             } else {
                 switch viewStyle {
                 case .list:
                     NotesListView(
-                        pinned: groups.pinned, others: groups.others,
+                        notes: remaining, label: label,
                         isSelecting: isSelecting, selection: $selection,
                         isHeaderCollapsed: $isHeaderCollapsed, zoomNamespace: zoomNamespace,
                         onOpen: open, onTogglePin: togglePin, onDelete: deleteNote
-                    ) { header }
+                    ) { header(featured: featured) }
                     .transition(viewSwitchTransition)
                 case .gallery:
                     NotesGalleryView(
-                        pinned: groups.pinned, others: groups.others,
+                        notes: remaining, label: label,
                         isSelecting: isSelecting, selection: $selection,
                         isHeaderCollapsed: $isHeaderCollapsed, zoomNamespace: zoomNamespace,
                         onOpen: open, onTogglePin: togglePin, onDelete: deleteNote
-                    ) { header }
+                    ) { header(featured: featured) }
                     .transition(viewSwitchTransition)
                 }
             }
         }
         .animation(DS.Motion.standard(reduceMotion), value: viewStyle)
+        .animation(DS.Motion.standard(reduceMotion), value: sortOrder)
         .animation(DS.Motion.standard(reduceMotion), value: notes.isEmpty)
         .animation(DS.Motion.standard(reduceMotion), value: filteredNotes.isEmpty)
     }
 
-    private var header: some View {
-        HomeHeader(count: notes.count, sortOrder: $sortOrder, showsSort: notes.count > 1)
+    /// Everything above the remaining notes: hero, filters, dashboard, capture.
+    private func header(featured: [Note]) -> some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xl - 4) {
+            HomeHeader(totalCount: notes.count, filter: $filter)
+
+            if !featured.isEmpty {
+                HomeDashboard(
+                    notes: featured,
+                    // In list view the dashboard shares one List row (see NoteTile).
+                    showsContextMenus: viewStyle == .gallery,
+                    isSelecting: isSelecting, selection: $selection, zoomNamespace: zoomNamespace,
+                    onOpen: open, onTogglePin: togglePin, onDelete: deleteNote
+                )
+            }
+
+            if showsDashboard && !isSelecting {
+                captureCard
+                    .transition(.opacity)
+            }
+        }
+        .frame(maxWidth: 760)
+        .frame(maxWidth: .infinity)
     }
 
-    /// Empty store or empty search: header + one calm message card.
+    private var captureCard: some View {
+        CapturePromptCard(text: $captureText, isFocused: $isCaptureFocused, onSubmit: captureNote)
+    }
+
+    /// Nothing to show (empty store, empty filter, no search result): hero + one calm card.
     private var messageContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: DS.Spacing.xl) {
-                header
+            VStack(alignment: .leading, spacing: DS.Spacing.xl - 4) {
+                HomeHeader(totalCount: notes.count, filter: $filter, showsFilters: !notes.isEmpty)
                 if notes.isEmpty {
+                    captureCard
                     HomeMessageCard(
                         systemImage: "square.and.pencil",
                         title: "Aucune note",
@@ -160,16 +218,26 @@ struct ContentView: View {
                         GlassPillButton(title: "Créer une note", prominent: true, action: createNote)
                             .padding(.top, DS.Spacing.xs)
                     }
-                } else {
+                } else if !searchText.isEmpty {
                     HomeMessageCard(
                         systemImage: "magnifyingglass",
                         title: "Aucun résultat",
                         message: "Aucune note ne correspond à « \(searchText) »."
                     )
+                } else {
+                    HomeMessageCard(
+                        systemImage: filter == .pinned ? "bookmark" : "clock",
+                        title: filter == .pinned ? "Aucune note épinglée" : "Rien de récent",
+                        message: filter == .pinned
+                            ? "Épinglez une note pour la garder en tête de liste."
+                            : "Les notes modifiées ces sept derniers jours apparaîtront ici."
+                    )
                 }
             }
+            .frame(maxWidth: 760)
             .padding(.horizontal, DS.Spacing.screen)
             .padding(.top, DS.Spacing.xs)
+            .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
         .tracksHeaderCollapse($isHeaderCollapsed)
@@ -190,8 +258,7 @@ struct ContentView: View {
             selectionSummary: selectionSummary,
             isCollapsed: isHeaderCollapsed,
             hasNotes: !notes.isEmpty,
-            viewStyle: viewStyle,
-            onToggleViewStyle: switchViewStyle,
+            sortOrder: $sortOrder,
             onBeginSelection: beginSelection,
             onEndSelection: endSelection
         )
@@ -201,14 +268,17 @@ struct ContentView: View {
         HomeBottomBar(
             searchText: $searchText,
             isSearchFocused: $isSearchFocused,
+            isSearching: $isSearching,
             hasNotes: !notes.isEmpty,
             isSelecting: isSelecting,
+            viewStyle: viewStyle,
             allSelected: allVisibleSelected,
             canDelete: !selectedNotes.isEmpty,
             deleteTitle: batchDeleteTitle,
             showDeleteConfirm: $showBatchDeleteConfirm,
             zoomNamespace: zoomNamespace,
             onCompose: createNote,
+            onToggleViewStyle: switchViewStyle,
             onToggleSelectAll: toggleSelectAll,
             onConfirmDelete: deleteSelectedNotes
         )
@@ -243,12 +313,14 @@ struct ContentView: View {
 
     private func open(_ note: Note) {
         isSearchFocused = false
+        isCaptureFocused = false
         path.append(note)
     }
 
     /// Inserts an empty note and opens it. If it is left empty, the editor deletes it on exit.
     private func createNote() {
         isSearchFocused = false
+        isCaptureFocused = false
         let note = viewModel.createNote()
         composedNote = note.zoomID
         path.append(note)
@@ -261,6 +333,19 @@ struct ContentView: View {
     }
 
     // MARK: Actions
+
+    /// Saves the quick-capture text as a new note, staying on the home screen.
+    private func captureNote() {
+        let text = captureText
+        withAnimation(DS.Motion.standard(reduceMotion)) {
+            viewModel.attempt { try $0.capture(text) }
+            // A new note is neither pinned nor old: make sure it is visible.
+            if filter == .pinned { filter = .all }
+        }
+        captureText = ""
+        isCaptureFocused = false
+        captureFeedback += 1
+    }
 
     private func togglePin(_ note: Note) {
         withAnimation(DS.Motion.standard(reduceMotion)) {
@@ -280,6 +365,7 @@ struct ContentView: View {
 
     private func beginSelection() {
         isSearchFocused = false
+        isCaptureFocused = false
         withAnimation(DS.Motion.morph(reduceMotion)) {
             selection.removeAll()
             isSelecting = true

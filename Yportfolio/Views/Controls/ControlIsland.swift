@@ -62,12 +62,13 @@ extension ButtonStyle where Self == IslandIconButtonStyle {
 
 // MARK: - Standalone controls
 
-/// A single circular glass control (back, close, delete…), 52 pt like an island.
+/// A single circular glass control (back, close, delete…), 52 pt like an island by default.
 struct GlassCircleButton: View {
     let title: String
     let systemImage: String
     var prominent = false
     var role: ButtonRole? = nil
+    var size: CGFloat = DS.Control.height
     let action: () -> Void
 
     @Environment(\.isEnabled) private var isEnabled
@@ -77,7 +78,7 @@ struct GlassCircleButton: View {
             Image(systemName: systemImage)
                 .font(.system(size: DS.Control.symbolSize + (prominent ? 3 : 0), weight: .semibold))
                 .foregroundStyle(prominent ? DS.Surface.background : (role == .destructive ? Color.red : Color.primary))
-                .frame(width: DS.Control.height, height: DS.Control.height)
+                .frame(width: size, height: size)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -119,7 +120,7 @@ struct GlassPillButton: View {
             GlassCircleButton(title: "Retour", systemImage: "chevron.left") {}
             Spacer()
             ControlIsland {
-                Button("Épingler", systemImage: "pin") {}
+                Button("Épingler", systemImage: "bookmark") {}
                 Button("Supprimer", systemImage: "trash") {}
             }
         }
