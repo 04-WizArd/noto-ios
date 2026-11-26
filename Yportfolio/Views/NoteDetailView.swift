@@ -1,12 +1,6 @@
-//
-//  NoteDetailView.swift
-//  Yportfolio
-//
-//  Full-screen note editor — inspired by Apple Notes editor (iOS 26).
-//
-
 import SwiftUI
 
+/// Full-screen note editor — inspired by Apple Notes editor (iOS 26).
 struct NoteDetailView: View {
     @Binding var note: Note
     let onDelete: (UUID) -> Void

@@ -1,12 +1,6 @@
-//
-//  NoteRowView.swift
-//  Yportfolio
-//
-//  Inspired by Apple Notes list row — iOS 26 style.
-//
-
 import SwiftUI
 
+/// Notes list row — inspired by Apple Notes (iOS 26).
 struct NoteRowView: View {
     let note: Note
 

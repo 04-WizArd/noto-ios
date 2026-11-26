@@ -1,16 +1,8 @@
-//
-//  NoteCard.swift
-//  Yportfolio
-//
-//  Created by Jordi Jordi on 23/05/2026.
-//
-
 import SwiftUI
 
+/// Gallery card for a single note.
 struct NoteCard: View {
     let note: Note
-    let isSelected: Bool
-    let namespace: Namespace.ID
 
     @Environment(\.colorScheme) private var scheme
 
@@ -112,11 +104,7 @@ struct NoteCard: View {
         Color(UIColor.systemGroupedBackground).ignoresSafeArea()
     }
     .overlay(
-        NoteCard(
-            note: Note.sample.first!,
-            isSelected: false,
-            namespace: Namespace().wrappedValue
-        )
-        .padding(DS.Spacing.xl)
+        NoteCard(note: Note.sample.first!)
+            .padding(DS.Spacing.xl)
     )
 }

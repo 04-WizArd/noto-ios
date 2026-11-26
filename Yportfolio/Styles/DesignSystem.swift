@@ -1,14 +1,8 @@
-//
-//  DesignSystem.swift
-//  Yportfolio
-//
-//  Design tokens centralisés — modifier ici pour propager partout.
-//
-
 import SwiftUI
 
-// MARK: - Spacing
+// MARK: - Design tokens
 
+/// Design tokens centralisés — modifier ici pour propager partout.
 enum DS {
 
     // ── Spacing scale (inspired by 4pt grid) ──────────────────────────
@@ -46,13 +40,6 @@ enum DS {
                 radius: 16, x: 0, y: 8
             )
         }
-
-        static func sheet(accent: Color, scheme: ColorScheme) -> Config {
-            Config(
-                color: accent.opacity(scheme == .dark ? 0.45 : 0.22),
-                radius: 40, x: 0, y: -8
-            )
-        }
     }
 
     // ── Animation presets ─────────────────────────────────────────────
@@ -60,10 +47,6 @@ enum DS {
         /// Standard interactive spring — buttons, cards
         static let interactive = SwiftUI.Animation.spring(
             response: 0.28, dampingFraction: 0.72
-        )
-        /// Overlay / sheet presentation
-        static let overlay = SwiftUI.Animation.spring(
-            response: 0.40, dampingFraction: 0.85
         )
     }
 
@@ -83,9 +66,7 @@ enum DS {
 
     // ── Materials ─────────────────────────────────────────────────────
     enum Material {
-        static let card:    SwiftUI.Material = .ultraThinMaterial
-        static let overlay: SwiftUI.Material = .ultraThickMaterial
-        static let toolbar: SwiftUI.Material = .ultraThinMaterial
+        static let card: SwiftUI.Material = .ultraThinMaterial
     }
 }
 
@@ -95,12 +76,6 @@ extension View {
     /// Applies a card shadow using DS tokens.
     func cardShadow(accent: Color, scheme: ColorScheme) -> some View {
         let s = DS.Shadow.card(accent: accent, scheme: scheme)
-        return self.shadow(color: s.color, radius: s.radius, x: s.x, y: s.y)
-    }
-
-    /// Applies a sheet/overlay shadow using DS tokens.
-    func sheetShadow(accent: Color, scheme: ColorScheme) -> some View {
-        let s = DS.Shadow.sheet(accent: accent, scheme: scheme)
         return self.shadow(color: s.color, radius: s.radius, x: s.x, y: s.y)
     }
 }

@@ -1,10 +1,3 @@
-//
-//  Item.swift
-//  Yportfolio
-//
-//  Created by Jordi Jordi on 21/05/2026.
-//
-
 import Foundation
 import SwiftData
 

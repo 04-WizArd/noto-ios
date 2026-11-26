@@ -1,10 +1,3 @@
-//
-//  PressableScaleModifier.swift
-//  Yportfolio
-//
-//  Created by Jordi Jordi on 23/05/2026.
-//
-
 import SwiftUI
 
 /// Applies a subtle press-down scale to any view that isn't a Button.

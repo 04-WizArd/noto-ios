@@ -1,10 +1,3 @@
-//
-//  HeaderView.swift
-//  Yportfolio
-//
-//  Created by Jordi Jordi on 23/05/2026.
-//
-
 import SwiftUI
 
 /// Reusable section header: large rounded title + optional count badge.

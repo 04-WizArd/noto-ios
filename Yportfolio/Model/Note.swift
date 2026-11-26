@@ -1,12 +1,4 @@
-//
-//  Note.swift
-//  Yportfolio
-//
-//  Created by Jordi Jordi on 23/05/2026.
-//
-
 import SwiftUI
-import Foundation
 
 struct Note: Identifiable, Equatable {
     let id: UUID
@@ -30,10 +22,6 @@ extension Note {
         f.locale = .autoupdatingCurrent
         f.dateStyle = .medium
         return f.string(from: date)
-    }
-
-    var lorem: String {
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque convallis, nisl vel convallis mattis, massa arcu blandit massa, in placerat sapien nisi id arcu. Integer luctus, ante at aliquam venenatis, tortor dolor tristique nisi, a gravida nibh justo et sapien."
     }
 
     static var sample: [Note] {

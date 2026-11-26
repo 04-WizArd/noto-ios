@@ -1,45 +1,6 @@
-//
-//  ContentView.swift
-//  Yportfolio
-//
-//  Created by Gabriel Theodoropoulos on 11/10/21.
-//  Redesigned — Apple Notes (iOS 26) aesthetic.
-//
-
 import SwiftUI
 
-// MARK: - Sort Order
-
-enum NoteSortOrder: String, CaseIterable, Identifiable {
-    case dateModified = "dateModified"
-    case dateCreated  = "dateCreated"
-    case title        = "title"
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .dateModified: return "Date de modification"
-        case .dateCreated:  return "Date de création"
-        case .title:        return "Titre"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .dateModified: return "clock.arrow.circlepath"
-        case .dateCreated:  return "calendar"
-        case .title:        return "textformat.abc"
-        }
-    }
-}
-
-// MARK: - View Style
-
-enum NoteViewStyle { case list, gallery }
-
-// MARK: - ContentView
-
+/// Notes list screen — Apple Notes (iOS 26) aesthetic.
 struct ContentView: View {
 
     // MARK: State
@@ -171,8 +132,7 @@ struct ContentView: View {
 
                 LazyVGrid(columns: galleryColumns, spacing: DS.Spacing.md) {
                     ForEach(filteredNotes) { note in
-                        let isSelected = false
-                        NoteCard(note: note, isSelected: isSelected, namespace: Namespace().wrappedValue)
+                        NoteCard(note: note)
                             .onTapGesture {
                                 if let idx = notes.firstIndex(where: { $0.id == note.id }) {
                                     path.append(notes[idx].id)
@@ -371,15 +331,12 @@ struct ContentView: View {
 
 // MARK: - Previews
 
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            ContentView()
-                .preferredColorScheme(.light)
-                .previewDisplayName("Light — Liste")
-            ContentView()
-                .preferredColorScheme(.dark)
-                .previewDisplayName("Dark — Liste")
-        }
-    }
+#Preview("Light — Liste") {
+    ContentView()
+        .preferredColorScheme(.light)
+}
+
+#Preview("Dark — Liste") {
+    ContentView()
+        .preferredColorScheme(.dark)
 }
