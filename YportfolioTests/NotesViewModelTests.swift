@@ -290,4 +290,18 @@ struct NotesViewModelTests {
 
         #expect(f.viewModel.lastError is SampleError)
     }
+
+    @Test("attempt(_:) runs the operation and reports only failures")
+    func attemptReportsFailures() throws {
+        struct SampleError: Error {}
+        let f = try NotesFixture()
+        let note = try f.savedNote("Essai")
+
+        f.viewModel.attempt { try $0.togglePin(note) }
+        #expect(note.isPinned)
+        #expect(f.viewModel.lastError == nil)
+
+        f.viewModel.attempt { _ in throw SampleError() }
+        #expect(f.viewModel.lastError is SampleError)
+    }
 }

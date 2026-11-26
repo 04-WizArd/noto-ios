@@ -1,114 +1,68 @@
 import SwiftUI
 import SwiftData
 
-/// Gallery card for a single note.
+/// Gallery card. A soft, note-specific colour (pastel in Light Mode, deep tone in
+/// Dark Mode), bold title with the date tucked underneath, and a preview whose
+/// placement depends on the card's slot in the rhythm:
+/// - `.tall`: title at the top, preview anchored at the bottom (editorial block);
+/// - `.wide`: compact horizontal reading — title, date, two preview lines.
+/// The top-trailing corner is left free for the pin / selection control.
 struct NoteCard: View {
     let note: Note
+    var slot: RhythmLayout.Slot = .tall
+    var isSelected = false
 
-    @Environment(\.colorScheme) private var scheme
+    @Environment(\.colorScheme) private var colorScheme
 
-    // MARK: - Body
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+    }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            cardBackground
-            contentStack
-        }
-        .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
-        .cardShadow(accent: note.accent.color, scheme: scheme)
-        .overlay(borderOverlay)
-    }
-
-    // MARK: - Subviews
-
-    private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
-            .fill(DS.Material.card)
-            .background(
-                RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
-                    .fill(note.accent.color.opacity(scheme == .dark ? 0.15 : 0.07))
-            )
-    }
-
-    private var borderOverlay: some View {
-        RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
-            .strokeBorder(
-                Color.white.opacity(scheme == .dark ? 0.10 : 0.50),
-                lineWidth: 0.5
-            )
-    }
-
-    private var contentStack: some View {
         VStack(alignment: .leading, spacing: 0) {
-            dateRow
-                .padding(.bottom, DS.Spacing.xs + 2)
+            Text(note.displayTitle)
+                .font(slot == .tall ? DS.Typography.cardTitle : DS.Typography.wideTitle)
+                .foregroundStyle(.primary)
+                .lineLimit(slot == .tall ? 3 : 2)
+                .padding(.trailing, 34)   // pin control
 
-            titleText
-                .padding(.bottom, DS.Spacing.xxs + 2)
+            Text(note.shortModifiedDate)
+                .font(DS.Typography.metadata)
+                .foregroundStyle(.secondary)
+                .padding(.top, 6)
 
-            snippetText
+            if slot == .tall {
+                Spacer(minLength: DS.Spacing.sm)
+            }
 
-            Spacer(minLength: DS.Spacing.sm)
-
-            footerBadge
+            if !note.bodyPreview.isEmpty {
+                Text(note.bodyPreview)
+                    .font(DS.Typography.preview)
+                    .foregroundStyle(Color.primary.opacity(0.72))
+                    .lineLimit(slot == .tall ? 4 : 2)
+                    .padding(.top, slot == .tall ? 0 : 10)
+            }
         }
-        .padding(DS.Spacing.md)
-    }
-
-    private var dateRow: some View {
-        HStack(spacing: DS.Spacing.xxs + 2) {
-            Circle()
-                .fill(note.accent.color.gradient)
-                .frame(width: 7, height: 7)
-            Text(note.formattedDate)
-                .font(DS.Typography.caption2())
-                .foregroundStyle(.tertiary)
-                .lineLimit(1)
+        .padding(18)
+        .frame(maxWidth: .infinity, maxHeight: slot == .tall ? .infinity : nil, alignment: .topLeading)
+        .background(DS.Surface.tint(note.accent.color, colorScheme), in: shape)
+        .overlay {
+            shape.strokeBorder(Color.accentColor, lineWidth: 3)
+                .opacity(isSelected ? 1 : 0)
         }
-    }
-
-    private var titleText: some View {
-        Text(note.title.isEmpty ? "Sans titre" : note.title)
-            .font(DS.Typography.subheadline())
-            .foregroundStyle(.primary)
-            .lineLimit(2)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var snippetText: some View {
-        Text(note.body.isEmpty ? "Appuyez pour modifier…" : note.body)
-            .font(DS.Typography.footnote())
-            .foregroundStyle(.secondary)
-            .lineLimit(3)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var footerBadge: some View {
-        HStack(spacing: DS.Spacing.xxs) {
-            Image(systemName: "note.text")
-                .font(DS.Typography.caption2())
-            Text("Note")
-                .font(DS.Typography.caption2().weight(.medium))
-        }
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, DS.Spacing.xs)
-        .padding(.vertical, DS.Spacing.xxs)
-        .background(Color.primary.opacity(0.06), in: Capsule())
+        .contentShape(shape)
+        .accessibilityElement(children: .combine)
     }
 }
 
-// MARK: - Preview
-
 #Preview(traits: .sampleNotes) {
     @Previewable @Query var notes: [Note]
-    ZStack {
-        Color(UIColor.systemGroupedBackground).ignoresSafeArea()
-    }
-    .overlay {
-        if let note = notes.first {
-            NoteCard(note: note)
-                .padding(DS.Spacing.xl)
+    ScrollView {
+        RhythmLayout(tallHeight: 212) {
+            ForEach(Array(notes.enumerated()), id: \.element.id) { index, note in
+                NoteCard(note: note, slot: RhythmLayout.slot(at: index, count: notes.count))
+            }
         }
+        .padding()
     }
 }

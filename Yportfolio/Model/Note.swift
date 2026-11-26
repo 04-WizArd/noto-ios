@@ -41,11 +41,4 @@ extension Note {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
         !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
-
-    var formattedDate: String {
-        let f = DateFormatter()
-        f.locale = .autoupdatingCurrent
-        f.dateStyle = .medium
-        return f.string(from: modifiedAt)
-    }
 }

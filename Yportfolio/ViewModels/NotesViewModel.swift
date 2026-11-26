@@ -100,6 +100,16 @@ final class NotesViewModel {
         lastError = error
     }
 
+    /// Runs an operation from the UI and reports its failure, if any.
+    /// Keeps the `do / catch / report` boilerplate out of the views.
+    func attempt(_ operation: (NotesViewModel) throws -> Void) {
+        do {
+            try operation(self)
+        } catch {
+            report(error)
+        }
+    }
+
     // MARK: - Private
 
     private func save() throws {

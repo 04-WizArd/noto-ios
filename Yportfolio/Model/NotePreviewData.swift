@@ -10,7 +10,7 @@ extension Note {
         return [
             Note(title: "Hello SwiftUI!",
                  body: "First steps with SwiftUI. Learning the basics of declarative UI programming and building beautiful interfaces.",
-                 accent: .blue,
+                 accent: .blue, isPinned: true,
                  createdAt: now.addingTimeInterval(-86_400 * 3), modifiedAt: now),
             Note(title: "Build great apps",
                  body: "Iterate, test, and polish. The key to great apps is attention to detail and consistent design language.",

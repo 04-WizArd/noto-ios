@@ -2,80 +2,99 @@ import SwiftUI
 
 // MARK: - Design tokens
 
-/// Design tokens centralisés — modifier ici pour propager partout.
+/// Centralised design tokens.
+///
+/// Two layers:
+/// - **content** (notes, text): solid surfaces on the system background (white / black);
+/// - **interaction** (floating islands, compose, editor actions): Liquid Glass.
+///
+/// Every interactive control sits on one 52 pt grid: islands, standalone circles,
+/// pills, the search field and the compose button share that height, so controls
+/// line up wherever they meet.
 enum DS {
 
-    // ── Spacing scale (inspired by 4pt grid) ──────────────────────────
+    // ── Spacing (4 pt grid) ───────────────────────────────────────────
     enum Spacing {
         static let xxs: CGFloat = 4
         static let xs:  CGFloat = 8
         static let sm:  CGFloat = 12
         static let md:  CGFloat = 16
         static let lg:  CGFloat = 20
-        static let xl:  CGFloat = 24
-        static let xxl: CGFloat = 32
-        static let xxxl: CGFloat = 48
+        static let xl:  CGFloat = 28
+        static let xxl: CGFloat = 40
+        /// Horizontal margin of every screen.
+        static let screen: CGFloat = 20
+    }
+
+    // ── Controls ──────────────────────────────────────────────────────
+    enum Control {
+        /// Height of every floating control (island, circle, pill, search, compose).
+        static let height: CGFloat = 52
+        /// Inner padding of an island; its buttons are `height - 2 × islandInset`.
+        static let islandInset: CGFloat = 4
+        /// Gap between buttons inside an island.
+        static let islandSpacing: CGFloat = 2
+        /// Button diameter inside an island (44 pt: the minimum hit target).
+        static var islandButton: CGFloat { height - 2 * islandInset }
+        /// SF Symbol size inside circular controls.
+        static let symbolSize: CGFloat = 17
+        /// Small circular control living on cards (pin / selection).
+        static let cardBadge: CGFloat = 32
     }
 
     // ── Corner radii ──────────────────────────────────────────────────
     enum Radius {
-        static let sm:  CGFloat = 12
-        static let md:  CGFloat = 16
-        static let lg:  CGFloat = 20
-        static let xl:  CGFloat = 28
-    }
-
-    // ── Shadows ───────────────────────────────────────────────────────
-    enum Shadow {
-        struct Config {
-            let color: Color
-            let radius: CGFloat
-            let x: CGFloat
-            let y: CGFloat
-        }
-
-        static func card(accent: Color, scheme: ColorScheme) -> Config {
-            Config(
-                color: accent.opacity(scheme == .dark ? 0.30 : 0.18),
-                radius: 16, x: 0, y: 8
-            )
-        }
-    }
-
-    // ── Animation presets ─────────────────────────────────────────────
-    enum Animation {
-        /// Standard interactive spring — buttons, cards
-        static let interactive = SwiftUI.Animation.spring(
-            response: 0.28, dampingFraction: 0.72
-        )
+        static let card: CGFloat = 28
+        static let row: CGFloat = 22
     }
 
     // ── Typography ────────────────────────────────────────────────────
+    /// SF Pro only. Personality comes from scale and weight contrast:
+    /// a very large display title against compact, quiet metadata.
     enum Typography {
-        static func largeTitle()  -> Font { .system(.largeTitle,  design: .rounded).weight(.bold) }
-        static func title()       -> Font { .system(.title,       design: .rounded).weight(.bold) }
-        static func title2()      -> Font { .system(.title2,      design: .rounded).weight(.bold) }
-        static func headline()    -> Font { .system(.headline,    design: .rounded) }
-        static func subheadline() -> Font { .system(.subheadline, design: .rounded).weight(.semibold) }
-        static func body()        -> Font { .system(.body) }
-        static func callout()     -> Font { .system(.callout) }
-        static func footnote()    -> Font { .system(.footnote) }
-        static func caption()     -> Font { .system(.caption) }
-        static func caption2()    -> Font { .system(.caption2) }
+        /// Base size of the display titles (home + editor), scaled with Dynamic Type.
+        static let displaySize: CGFloat = 40
+        static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .bold) }
+
+        static let sectionLabel = Font.footnote.weight(.semibold)
+        static let rowTitle     = Font.headline
+        static let cardTitle    = Font.title3.weight(.bold)
+        static let wideTitle    = Font.headline
+        static let preview      = Font.subheadline
+        static let metadata     = Font.caption.weight(.medium)
+        static let control      = Font.body.weight(.semibold)
     }
 
-    // ── Materials ─────────────────────────────────────────────────────
-    enum Material {
-        static let card: SwiftUI.Material = .ultraThinMaterial
+    // ── Surfaces ──────────────────────────────────────────────────────
+    enum Surface {
+        /// Screen background: white in Light Mode, black in Dark Mode.
+        static let background = Color(uiColor: .systemBackground)
+        /// Neutral raised surface (list cards, chips, badges).
+        static let raised = Color(uiColor: .secondarySystemBackground)
+
+        /// Soft, note-specific card colour: a pastel in Light Mode,
+        /// a deep tone in Dark Mode. Text on top stays `.primary`.
+        static func tint(_ accent: Color, _ scheme: ColorScheme) -> Color {
+            accent.opacity(scheme == .dark ? 0.26 : 0.15)
+        }
     }
-}
 
-// MARK: - View Extensions (convenience)
+    // ── Motion ────────────────────────────────────────────────────────
+    enum Motion {
+        /// Default state change: short, critically damped (no bounce).
+        /// `nil` with Reduce Motion, so content changes without travelling.
+        static func standard(_ reduceMotion: Bool) -> Animation? {
+            reduceMotion ? nil : .smooth(duration: 0.35)
+        }
 
-extension View {
-    /// Applies a card shadow using DS tokens.
-    func cardShadow(accent: Color, scheme: ColorScheme) -> some View {
-        let s = DS.Shadow.card(accent: accent, scheme: scheme)
-        return self.shadow(color: s.color, radius: s.radius, x: s.x, y: s.y)
+        /// Slightly livelier spring for controls that morph (islands, chips).
+        static func morph(_ reduceMotion: Bool) -> Animation {
+            reduceMotion ? .easeInOut(duration: 0.15) : .spring(duration: 0.4, bounce: 0.15)
+        }
+
+        /// Small, immediate feedback (selection, press).
+        static func quick(_ reduceMotion: Bool) -> Animation {
+            reduceMotion ? .linear(duration: 0.1) : .snappy(duration: 0.22)
+        }
     }
 }

@@ -1,85 +1,60 @@
 import SwiftUI
 import SwiftData
 
-/// Notes list row — inspired by Apple Notes (iOS 26).
+/// List card: neutral raised surface (the list is the calm, dense reading mode;
+/// colour is reserved for the gallery), title, two-line preview, accent dot + date.
+/// The top-trailing corner is left free for the pin / selection control.
 struct NoteRowView: View {
     let note: Note
+    var isSelected = false
 
-    // MARK: - Body
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // ── Title ─────────────────────────────────────────────────────
+        VStack(alignment: .leading, spacing: 6) {
+            Text(note.displayTitle)
+                .font(DS.Typography.rowTitle)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .padding(.trailing, 34)   // pin control
+
+            Text(note.bodyPreview.isEmpty ? "Pas de texte supplémentaire" : note.bodyPreview)
+                .font(DS.Typography.preview)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+
             HStack(spacing: 6) {
-                // Accent dot (subtle category indicator)
                 Circle()
                     .fill(note.accent.color)
-                    .frame(width: 6, height: 6)
-
-                Text(note.title.isEmpty ? "Sans titre" : note.title)
-                    .font(.system(.body, design: .default).weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-            }
-
-            // ── Date + Snippet preview (Apple Notes pattern) ──────────────
-            HStack(spacing: 6) {
-                Text(shortDate)
-                    .font(.subheadline)
+                    .frame(width: 7, height: 7)
+                    .accessibilityHidden(true)
+                Text(note.shortModifiedDate)
+                    .font(DS.Typography.metadata)
                     .foregroundStyle(.secondary)
-                    .fixedSize()                    // never truncates date
-
-                Text(previewText)
-                    .font(.subheadline)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
             }
+            .padding(.top, 4)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, DS.Spacing.md)
+        .padding(.horizontal, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Computed
-
-    private var previewText: String {
-        note.body.isEmpty ? "Pas de texte supplémentaire" : note.body
-    }
-
-    /// Context-aware date label matching Apple Notes behavior.
-    private var shortDate: String {
-        let cal = Calendar.current
-        let now  = Date()
-
-        if cal.isDateInToday(note.modifiedAt) {
-            return formatted(note.modifiedAt, format: "HH:mm")
-        } else if cal.isDateInYesterday(note.modifiedAt) {
-            return "Hier"
-        } else if let days = cal.dateComponents([.day], from: note.modifiedAt, to: now).day, days < 7 {
-            return formatted(note.modifiedAt, format: "EEEE")
-        } else {
-            let f = DateFormatter()
-            f.dateStyle  = .short
-            f.locale     = .autoupdatingCurrent
-            return f.string(from: note.modifiedAt)
+        .background(DS.Surface.raised, in: shape)
+        .overlay {
+            shape.strokeBorder(Color.accentColor, lineWidth: 3)
+                .opacity(isSelected ? 1 : 0)
         }
-    }
-
-    private func formatted(_ date: Date, format: String) -> String {
-        let f = DateFormatter()
-        f.dateFormat = format
-        f.locale     = .autoupdatingCurrent
-        return f.string(from: date).capitalized
+        .contentShape(shape)
+        .accessibilityElement(children: .combine)
     }
 }
 
-// MARK: - Preview
-
 #Preview(traits: .sampleNotes) {
     @Previewable @Query var notes: [Note]
-    List {
-        ForEach(notes) { note in
-            NoteRowView(note: note)
+    ScrollView {
+        VStack(spacing: 10) {
+            ForEach(notes) { NoteRowView(note: $0) }
         }
+        .padding()
     }
-    .listStyle(.plain)
 }
