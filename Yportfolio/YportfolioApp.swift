@@ -7,10 +7,10 @@ struct YportfolioApp: App {
     // MARK: - SwiftData container
 
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([Item.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [config])
+            let container = try ModelContainer(for: Note.self)
+            Note.deleteEmptyNotes(in: container.mainContext)
+            return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }

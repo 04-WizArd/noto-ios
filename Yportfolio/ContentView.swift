@@ -1,21 +1,16 @@
 import SwiftUI
+import SwiftData
 
 /// Notes list screen — Apple Notes (iOS 26) aesthetic.
 struct ContentView: View {
 
-    // MARK: State
+    // MARK: Data
 
-    @State private var notes: [Note] = [
-        Note(id: UUID(), title: "Hello SwiftUI!",
-             snippet: "First steps with SwiftUI. Learning the basics of declarative UI programming and building beautiful interfaces.",
-             date: Date(), accent: .blue),
-        Note(id: UUID(), title: "Build great apps",
-             snippet: "Iterate, test, and polish. The key to great apps is attention to detail and consistent design language.",
-             date: Date().addingTimeInterval(-3_600), accent: .green),
-        Note(id: UUID(), title: "Take a break",
-             snippet: "Short breaks improve focus and creativity. Step away from the screen, walk outside, and come back refreshed.",
-             date: Date().addingTimeInterval(-7_200), accent: .orange)
-    ]
+    @Environment(\.modelContext) private var modelContext
+    /// Base order = newest first; other sort orders are applied in memory.
+    @Query(sort: \Note.createdAt, order: .reverse) private var notes: [Note]
+
+    // MARK: State
 
     @State private var path        = NavigationPath()
     @State private var searchText  = ""
@@ -27,8 +22,8 @@ struct ContentView: View {
 
     private var sortedNotes: [Note] {
         switch sortOrder {
-        case .dateModified: return notes.sorted { $0.date > $1.date }
-        case .dateCreated:  return notes           // creation order = array order
+        case .dateModified: return notes.sorted { $0.modifiedAt > $1.modifiedAt }
+        case .dateCreated:  return notes           // already sorted by createdAt (newest first)
         case .title:
             return notes.sorted {
                 $0.title.localizedCompare($1.title) == .orderedAscending
@@ -41,7 +36,7 @@ struct ContentView: View {
         let q = searchText
         return sortedNotes.filter {
             $0.title.localizedCaseInsensitiveContains(q) ||
-            $0.snippet.localizedCaseInsensitiveContains(q)
+            $0.body.localizedCaseInsensitiveContains(q)
         }
     }
 
@@ -70,14 +65,8 @@ struct ContentView: View {
             )
             .toolbar { toolbarItems }
             // MARK: Navigation destination
-            .navigationDestination(for: UUID.self) { noteID in
-                if let idx = notes.firstIndex(where: { $0.id == noteID }) {
-                    NoteDetailView(note: $notes[idx]) { id in
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            notes.removeAll { $0.id == id }
-                        }
-                    }
-                }
+            .navigationDestination(for: Note.self) { note in
+                NoteDetailView(note: note)
             }
             // Filter sheet (UI only — future implementation)
             .sheet(isPresented: $showFilters) {
@@ -91,7 +80,7 @@ struct ContentView: View {
     private var listContent: some View {
         List {
             ForEach(filteredNotes) { note in
-                NavigationLink(value: note.id) {
+                NavigationLink(value: note) {
                     NoteRowView(note: note)
                 }
                 // Generous inset matching Apple Notes
@@ -100,7 +89,7 @@ struct ContentView: View {
                 // Swipe: delete
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {
-                        deleteNote(id: note.id)
+                        deleteNote(note)
                     } label: {
                         Label("Supprimer", systemImage: "trash")
                     }
@@ -134,9 +123,7 @@ struct ContentView: View {
                     ForEach(filteredNotes) { note in
                         NoteCard(note: note)
                             .onTapGesture {
-                                if let idx = notes.firstIndex(where: { $0.id == note.id }) {
-                                    path.append(notes[idx].id)
-                                }
+                                path.append(note)
                             }
                             .pressableScale()
                     }
@@ -310,33 +297,29 @@ struct ContentView: View {
 
     // MARK: Actions
 
+    /// Inserts an empty note and opens it. If it is left empty, the editor deletes it on exit.
     private func createNote() {
-        let newNote = Note(
-            id: UUID(),
-            title: "",
-            snippet: "",
-            date: Date(),
-            accent: Note.randomAccent()
-        )
-        notes.insert(newNote, at: 0)
-        path.append(newNote.id)
+        let newNote = Note(accent: .random())
+        modelContext.insert(newNote)
+        path.append(newNote)
     }
 
-    private func deleteNote(id: UUID) {
+    private func deleteNote(_ note: Note) {
         withAnimation(.easeOut(duration: 0.2)) {
-            notes.removeAll { $0.id == id }
+            modelContext.delete(note)
         }
+        try? modelContext.save()
     }
 }
 
 // MARK: - Previews
 
-#Preview("Light — Liste") {
+#Preview("Light — Liste", traits: .sampleNotes) {
     ContentView()
         .preferredColorScheme(.light)
 }
 
-#Preview("Dark — Liste") {
+#Preview("Dark — Liste", traits: .sampleNotes) {
     ContentView()
         .preferredColorScheme(.dark)
 }

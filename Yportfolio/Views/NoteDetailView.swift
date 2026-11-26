@@ -1,17 +1,20 @@
 import SwiftUI
+import SwiftData
 
 /// Full-screen note editor — inspired by Apple Notes editor (iOS 26).
 struct NoteDetailView: View {
-    @Binding var note: Note
-    let onDelete: (UUID) -> Void
+    @Bindable var note: Note
 
     // MARK: - Focus & State
 
     enum NoteField: Hashable { case title, body }
 
     @FocusState private var focus: NoteField?
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirm = false
+    /// Set when the user confirms deletion; the note is deleted once the editor is gone.
+    @State private var isDeleting = false
 
     // MARK: - Body
 
@@ -34,7 +37,7 @@ struct NoteDetailView: View {
             titleVisibility: .visible
         ) {
             Button("Supprimer la note", role: .destructive) {
-                onDelete(note.id)
+                isDeleting = true
                 dismiss()
             }
             Button("Annuler", role: .cancel) {}
@@ -49,6 +52,7 @@ struct NoteDetailView: View {
                 }
             }
         }
+        .onDisappear(perform: finishEditing)
     }
 
     // MARK: - Subviews
@@ -84,12 +88,12 @@ struct NoteDetailView: View {
 
     /// Main body editor — expandable, full-width.
     private var bodyField: some View {
-        TextField("Commencer à écrire…", text: $note.snippet, axis: .vertical)
+        TextField("Commencer à écrire…", text: $note.body, axis: .vertical)
             .font(.system(size: 17, design: .default))
             .lineSpacing(5)
             .foregroundStyle(.primary)
             .focused($focus, equals: .body)
-            .onChange(of: note.snippet) { _, _ in touchDate() }
+            .onChange(of: note.body) { _, _ in touchDate() }
             .padding(.horizontal, DS.Spacing.lg)
             .padding(.bottom, DS.Spacing.xxxl)
     }
@@ -153,19 +157,29 @@ struct NoteDetailView: View {
         .accessibilityLabel(label)
     }
 
-    /// "Touch" the note date on every keystroke so sort-by-date stays current.
+    /// Updates `modifiedAt` on every real edit so sort-by-date stays current.
+    /// `createdAt` is never touched.
     private func touchDate() {
-        note.date = Date()
+        note.modifiedAt = .now
+    }
+
+    /// Runs once the editor is gone (so the deleted model is never rendered):
+    /// deletes the note if requested or if it was left without content.
+    private func finishEditing() {
+        if isDeleting || !note.hasContent {
+            modelContext.delete(note)
+        }
+        try? modelContext.save()
     }
 }
 
 // MARK: - Preview
 
-#Preview {
+#Preview(traits: .sampleNotes) {
+    @Previewable @Query var notes: [Note]
     NavigationStack {
-        NoteDetailView(
-            note: .constant(Note.sample.first!),
-            onDelete: { _ in }
-        )
+        if let note = notes.first {
+            NoteDetailView(note: note)
+        }
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Gallery card for a single note.
 struct NoteCard: View {
@@ -15,7 +16,7 @@ struct NoteCard: View {
         }
         .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous))
-        .cardShadow(accent: note.accent, scheme: scheme)
+        .cardShadow(accent: note.accent.color, scheme: scheme)
         .overlay(borderOverlay)
     }
 
@@ -26,7 +27,7 @@ struct NoteCard: View {
             .fill(DS.Material.card)
             .background(
                 RoundedRectangle(cornerRadius: DS.Radius.lg, style: .continuous)
-                    .fill(note.accent.opacity(scheme == .dark ? 0.15 : 0.07))
+                    .fill(note.accent.color.opacity(scheme == .dark ? 0.15 : 0.07))
             )
     }
 
@@ -58,7 +59,7 @@ struct NoteCard: View {
     private var dateRow: some View {
         HStack(spacing: DS.Spacing.xxs + 2) {
             Circle()
-                .fill(note.accent.gradient)
+                .fill(note.accent.color.gradient)
                 .frame(width: 7, height: 7)
             Text(note.formattedDate)
                 .font(DS.Typography.caption2())
@@ -76,7 +77,7 @@ struct NoteCard: View {
     }
 
     private var snippetText: some View {
-        Text(note.snippet.isEmpty ? "Appuyez pour modifier…" : note.snippet)
+        Text(note.body.isEmpty ? "Appuyez pour modifier…" : note.body)
             .font(DS.Typography.footnote())
             .foregroundStyle(.secondary)
             .lineLimit(3)
@@ -99,12 +100,15 @@ struct NoteCard: View {
 
 // MARK: - Preview
 
-#Preview {
+#Preview(traits: .sampleNotes) {
+    @Previewable @Query var notes: [Note]
     ZStack {
         Color(UIColor.systemGroupedBackground).ignoresSafeArea()
     }
-    .overlay(
-        NoteCard(note: Note.sample.first!)
-            .padding(DS.Spacing.xl)
-    )
+    .overlay {
+        if let note = notes.first {
+            NoteCard(note: note)
+                .padding(DS.Spacing.xl)
+        }
+    }
 }

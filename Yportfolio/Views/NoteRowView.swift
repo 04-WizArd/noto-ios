@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Notes list row — inspired by Apple Notes (iOS 26).
 struct NoteRowView: View {
@@ -12,7 +13,7 @@ struct NoteRowView: View {
             HStack(spacing: 6) {
                 // Accent dot (subtle category indicator)
                 Circle()
-                    .fill(note.accent)
+                    .fill(note.accent.color)
                     .frame(width: 6, height: 6)
 
                 Text(note.title.isEmpty ? "Sans titre" : note.title)
@@ -41,7 +42,7 @@ struct NoteRowView: View {
     // MARK: - Computed
 
     private var previewText: String {
-        note.snippet.isEmpty ? "Pas de texte supplémentaire" : note.snippet
+        note.body.isEmpty ? "Pas de texte supplémentaire" : note.body
     }
 
     /// Context-aware date label matching Apple Notes behavior.
@@ -49,17 +50,17 @@ struct NoteRowView: View {
         let cal = Calendar.current
         let now  = Date()
 
-        if cal.isDateInToday(note.date) {
-            return formatted(note.date, format: "HH:mm")
-        } else if cal.isDateInYesterday(note.date) {
+        if cal.isDateInToday(note.modifiedAt) {
+            return formatted(note.modifiedAt, format: "HH:mm")
+        } else if cal.isDateInYesterday(note.modifiedAt) {
             return "Hier"
-        } else if let days = cal.dateComponents([.day], from: note.date, to: now).day, days < 7 {
-            return formatted(note.date, format: "EEEE")
+        } else if let days = cal.dateComponents([.day], from: note.modifiedAt, to: now).day, days < 7 {
+            return formatted(note.modifiedAt, format: "EEEE")
         } else {
             let f = DateFormatter()
             f.dateStyle  = .short
             f.locale     = .autoupdatingCurrent
-            return f.string(from: note.date)
+            return f.string(from: note.modifiedAt)
         }
     }
 
@@ -73,9 +74,10 @@ struct NoteRowView: View {
 
 // MARK: - Preview
 
-#Preview {
+#Preview(traits: .sampleNotes) {
+    @Previewable @Query var notes: [Note]
     List {
-        ForEach(Note.sample) { note in
+        ForEach(notes) { note in
             NoteRowView(note: note)
         }
     }
