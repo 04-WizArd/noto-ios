@@ -23,4 +23,18 @@ enum NoteSortOrder: String, CaseIterable, Identifiable {
         case .title:        return "textformat.abc"
         }
     }
+
+    /// Dates: newest first. Title: localized ascending.
+    func sorted(_ notes: [Note]) -> [Note] {
+        switch self {
+        case .dateModified:
+            return notes.sorted { $0.modifiedAt > $1.modifiedAt }
+        case .dateCreated:
+            return notes.sorted { $0.createdAt > $1.createdAt }
+        case .title:
+            return notes.sorted {
+                $0.title.localizedCompare($1.title) == .orderedAscending
+            }
+        }
+    }
 }

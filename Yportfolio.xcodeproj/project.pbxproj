@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		B1C0DE012FC5000100A10007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 04A7115C2FBF093900950C91 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 04A711632FBF093900950C91;
+			remoteInfo = Yportfolio;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		04A711642FBF093900950C91 /* Yportfolio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Yportfolio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1C0DE012FC5000100A10002 /* YportfolioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YportfolioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +27,22 @@
 			path = Yportfolio;
 			sourceTree = "<group>";
 		};
+		B1C0DE012FC5000100A10003 /* YportfolioTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = YportfolioTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		04A711612FBF093900950C91 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B1C0DE012FC5000100A10005 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				04A711662FBF093900950C91 /* Yportfolio */,
+				B1C0DE012FC5000100A10003 /* YportfolioTests */,
 				04A711652FBF093900950C91 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				04A711642FBF093900950C91 /* Yportfolio.app */,
+				B1C0DE012FC5000100A10002 /* YportfolioTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +95,29 @@
 			productReference = 04A711642FBF093900950C91 /* Yportfolio.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B1C0DE012FC5000100A10001 /* YportfolioTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B1C0DE012FC5000100A10009 /* Build configuration list for PBXNativeTarget "YportfolioTests" */;
+			buildPhases = (
+				B1C0DE012FC5000100A10004 /* Sources */,
+				B1C0DE012FC5000100A10005 /* Frameworks */,
+				B1C0DE012FC5000100A10006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B1C0DE012FC5000100A10008 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B1C0DE012FC5000100A10003 /* YportfolioTests */,
+			);
+			name = YportfolioTests;
+			packageProductDependencies = (
+			);
+			productName = YportfolioTests;
+			productReference = B1C0DE012FC5000100A10002 /* YportfolioTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -82,6 +130,10 @@
 				TargetAttributes = {
 					04A711632FBF093900950C91 = {
 						CreatedOnToolsVersion = 26.5;
+					};
+					B1C0DE012FC5000100A10001 = {
+						CreatedOnToolsVersion = 27.2;
+						TestTargetID = 04A711632FBF093900950C91;
 					};
 				};
 			};
@@ -100,12 +152,20 @@
 			projectRoot = "";
 			targets = (
 				04A711632FBF093900950C91 /* Yportfolio */,
+				B1C0DE012FC5000100A10001 /* YportfolioTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		04A711622FBF093900950C91 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B1C0DE012FC5000100A10006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +182,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B1C0DE012FC5000100A10004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B1C0DE012FC5000100A10008 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 04A711632FBF093900950C91 /* Yportfolio */;
+			targetProxy = B1C0DE012FC5000100A10007 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		04A7116F2FBF093900950C91 /* Debug */ = {
@@ -310,6 +385,38 @@
 			};
 			name = Release;
 		};
+		B1C0DE012FC5000100A1000A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jordi.yportfolio.YportfolioTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Yportfolio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Yportfolio";
+			};
+			name = Debug;
+		};
+		B1C0DE012FC5000100A1000B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jordi.yportfolio.YportfolioTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Yportfolio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Yportfolio";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -327,6 +434,15 @@
 			buildConfigurations = (
 				04A711722FBF093900950C91 /* Debug */,
 				04A711732FBF093900950C91 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B1C0DE012FC5000100A10009 /* Build configuration list for PBXNativeTarget "YportfolioTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1C0DE012FC5000100A1000A /* Debug */,
+				B1C0DE012FC5000100A1000B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

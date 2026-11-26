@@ -36,7 +36,8 @@ extension Note {
     }
 }
 
-/// Injects an in-memory `ModelContainer` filled with `Note.previewSamples()`.
+/// Injects an in-memory `ModelContainer` filled with `Note.previewSamples()`,
+/// plus a `NotesViewModel` bound to it.
 struct SampleNotesPreview: PreviewModifier {
     static func makeSharedContext() async throws -> ModelContainer {
         let container = try ModelContainer(
@@ -50,7 +51,9 @@ struct SampleNotesPreview: PreviewModifier {
     }
 
     func body(content: Content, context: ModelContainer) -> some View {
-        content.modelContainer(context)
+        content
+            .modelContainer(context)
+            .environment(NotesViewModel(modelContext: context.mainContext))
     }
 }
 

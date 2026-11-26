@@ -48,13 +48,4 @@ extension Note {
         f.dateStyle = .medium
         return f.string(from: modifiedAt)
     }
-
-    /// Deletes every note without content (e.g. a new note left open when the app was killed).
-    static func deleteEmptyNotes(in context: ModelContext) {
-        guard let notes = try? context.fetch(FetchDescriptor<Note>()) else { return }
-        for note in notes where !note.hasContent {
-            context.delete(note)
-        }
-        try? context.save()
-    }
 }

@@ -4,17 +4,20 @@ import SwiftData
 @main
 struct YportfolioApp: App {
 
-    // MARK: - SwiftData container
+    private let modelContainer: ModelContainer
+    @State private var notesViewModel: NotesViewModel
 
-    var sharedModelContainer: ModelContainer = {
+    init() {
+        let container = Self.makeModelContainer()
+        let viewModel = NotesViewModel(modelContext: container.mainContext)
         do {
-            let container = try ModelContainer(for: Note.self)
-            Note.deleteEmptyNotes(in: container.mainContext)
-            return container
+            try viewModel.deleteEmptyNotes()
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            viewModel.report(error)
         }
-    }()
+        modelContainer = container
+        _notesViewModel = State(initialValue: viewModel)
+    }
 
     // MARK: - Scene
 
@@ -22,6 +25,20 @@ struct YportfolioApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(modelContainer)
+        .environment(notesViewModel)
+    }
+
+    // MARK: - SwiftData container
+
+    /// The app cannot work without its store, and recovering from an unreadable
+    /// store (reset, migration plan, user-facing recovery screen) is a separate
+    /// strategy not designed yet — so a failure here still stops the app.
+    private static func makeModelContainer() -> ModelContainer {
+        do {
+            return try ModelContainer(for: Note.self)
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
     }
 }

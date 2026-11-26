@@ -6,8 +6,7 @@ struct ContentView: View {
 
     // MARK: Data
 
-    @Environment(\.modelContext) private var modelContext
-    /// Base order = newest first; other sort orders are applied in memory.
+    @Environment(NotesViewModel.self) private var viewModel
     @Query(sort: \Note.createdAt, order: .reverse) private var notes: [Note]
 
     // MARK: State
@@ -21,14 +20,7 @@ struct ContentView: View {
     // MARK: Derived
 
     private var sortedNotes: [Note] {
-        switch sortOrder {
-        case .dateModified: return notes.sorted { $0.modifiedAt > $1.modifiedAt }
-        case .dateCreated:  return notes           // already sorted by createdAt (newest first)
-        case .title:
-            return notes.sorted {
-                $0.title.localizedCompare($1.title) == .orderedAscending
-            }
-        }
+        sortOrder.sorted(notes)
     }
 
     private var filteredNotes: [Note] {
@@ -72,6 +64,12 @@ struct ContentView: View {
             .sheet(isPresented: $showFilters) {
                 filterSheetPlaceholder
             }
+        }
+        // Persistence failures reported by NotesViewModel (from any screen)
+        .alert("Enregistrement impossible", isPresented: isShowingError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(viewModel.lastError?.localizedDescription ?? "")
         }
     }
 
@@ -299,16 +297,26 @@ struct ContentView: View {
 
     /// Inserts an empty note and opens it. If it is left empty, the editor deletes it on exit.
     private func createNote() {
-        let newNote = Note(accent: .random())
-        modelContext.insert(newNote)
-        path.append(newNote)
+        path.append(viewModel.createNote())
     }
 
     private func deleteNote(_ note: Note) {
         withAnimation(.easeOut(duration: 0.2)) {
-            modelContext.delete(note)
+            do {
+                try viewModel.delete(note)
+            } catch {
+                viewModel.report(error)
+            }
         }
-        try? modelContext.save()
+    }
+
+    // MARK: Error alert
+
+    private var isShowingError: Binding<Bool> {
+        Binding(
+            get: { viewModel.lastError != nil },
+            set: { if !$0 { viewModel.lastError = nil } }
+        )
     }
 }
 

@@ -10,7 +10,7 @@ struct NoteDetailView: View {
     enum NoteField: Hashable { case title, body }
 
     @FocusState private var focus: NoteField?
-    @Environment(\.modelContext) private var modelContext
+    @Environment(NotesViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirm = false
     /// Set when the user confirms deletion; the note is deleted once the editor is gone.
@@ -158,18 +158,18 @@ struct NoteDetailView: View {
     }
 
     /// Updates `modifiedAt` on every real edit so sort-by-date stays current.
-    /// `createdAt` is never touched.
     private func touchDate() {
-        note.modifiedAt = .now
+        viewModel.noteDidChange(note)
     }
 
     /// Runs once the editor is gone (so the deleted model is never rendered):
-    /// deletes the note if requested or if it was left without content.
+    /// deletes the note if requested or if it was left without content, then saves.
     private func finishEditing() {
-        if isDeleting || !note.hasContent {
-            modelContext.delete(note)
+        do {
+            try viewModel.finishEditing(note, deleteRequested: isDeleting)
+        } catch {
+            viewModel.report(error)
         }
-        try? modelContext.save()
     }
 }
 
