@@ -11,7 +11,7 @@ import SwiftData
 @main
 struct YportfolioApp: App {
 
-    // MARK: - Init (global UIKit appearance)
+    // MARK: - Appearance
 
     init() {
         configureGlobalAppearance()
@@ -20,12 +20,10 @@ struct YportfolioApp: App {
     // MARK: - SwiftData container
 
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let schema = Schema([Item.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(for: schema, configurations: [config])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -40,33 +38,44 @@ struct YportfolioApp: App {
         .modelContainer(sharedModelContainer)
     }
 
-    // MARK: - Appearance
+    // MARK: - UIKit global appearance
 
-    /// Configures UIKit-level appearance so the navigation bar stays
-    /// transparent / blurred, matching the BackgroundView beneath it.
     private func configureGlobalAppearance() {
-        // Navigation bar — transparent by default, material applied via SwiftUI
-        let navAppearance = UINavigationBarAppearance()
-        navAppearance.configureWithTransparentBackground()
-        navAppearance.shadowColor = .clear
 
-        // Large title font: SF Rounded Bold to match DS.Typography
-        let largeTitleAttrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 34, weight: .bold)
+        // ── Navigation Bar ────────────────────────────────────────────
+        let nav = UINavigationBarAppearance()
+        nav.configureWithDefaultBackground()
+        nav.shadowColor = .clear   // no hairline under nav bar
+
+        // Large title: system default weight (no custom font — matches Notes)
+        nav.largeTitleTextAttributes = [
+            .font: UIFont.systemFont(ofSize: 34, weight: .bold),
+            .foregroundColor: UIColor.label
         ]
-        navAppearance.largeTitleTextAttributes = largeTitleAttrs
-
-        let titleAttrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
+        nav.titleTextAttributes = [
+            .font: UIFont.systemFont(ofSize: 17, weight: .semibold),
+            .foregroundColor: UIColor.label
         ]
-        navAppearance.titleTextAttributes = titleAttrs
 
-        UINavigationBar.appearance().standardAppearance = navAppearance
-        UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
-        UINavigationBar.appearance().compactAppearance    = navAppearance
+        UINavigationBar.appearance().standardAppearance   = nav
+        UINavigationBar.appearance().compactAppearance    = nav
 
-        // Remove list separators globally (cleaner look in any future lists)
-        UITableView.appearance().separatorStyle = .none
+        // Scroll edge: transparent so large title blends into content
+        let transparent = UINavigationBarAppearance()
+        transparent.configureWithTransparentBackground()
+        transparent.largeTitleTextAttributes = nav.largeTitleTextAttributes
+        transparent.titleTextAttributes      = nav.titleTextAttributes
+        UINavigationBar.appearance().scrollEdgeAppearance = transparent
+
+        // ── Toolbar (bottom bar) ──────────────────────────────────────
+        let toolbar = UIToolbarAppearance()
+        toolbar.configureWithDefaultBackground()
+        toolbar.shadowColor = .clear
+        UIToolbar.appearance().standardAppearance   = toolbar
+        UIToolbar.appearance().compactAppearance    = toolbar
+        UIToolbar.appearance().scrollEdgeAppearance = toolbar
+
+        // ── List / TableView ──────────────────────────────────────────
         UITableView.appearance().backgroundColor = .clear
     }
 }
