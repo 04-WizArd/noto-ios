@@ -1,4 +1,4 @@
-# Noto — iOS Notes App
+# Ink — iOS Notes App
 
 A native notes app for iPhone and iPad, built with SwiftUI and SwiftData, with a modern Liquid Glass interface.
 
@@ -12,7 +12,9 @@ A native notes app for iPhone and iPad, built with SwiftUI and SwiftData, with a
 
 ### Overview
 
-Noto is a focused, offline-first notes app. Notes are stored locally with SwiftData. The interface separates **content** (notes drawn on solid surfaces) from **interaction** (floating Liquid Glass controls). The Xcode project and target are named `Yportfolio`.
+Ink is a focused, offline-first notes app. Notes are stored locally with SwiftData. The interface separates **content** (notes drawn on solid surfaces) from **interaction** (floating Liquid Glass controls).
+
+> **Naming:** the product is called **Ink**. The repository (`noto-ios`), the Xcode project, target and scheme (`Yportfolio`) and the bundle identifier keep their original internal names.
 
 ### Features
 
@@ -129,7 +131,9 @@ Released under the [MIT License](LICENSE). © 2026 Jordi Mukeba.
 
 ### Présentation
 
-Noto est une application de notes simple et native, qui fonctionne hors ligne. Les notes sont stockées localement avec SwiftData. L’interface sépare le **contenu** (les notes, sur des surfaces opaques) de l’**interaction** (des commandes flottantes en Liquid Glass). Le projet et la cible Xcode s’appellent `Yportfolio`.
+Ink est une application de notes simple et native, qui fonctionne hors ligne. Les notes sont stockées localement avec SwiftData. L’interface sépare le **contenu** (les notes, sur des surfaces opaques) de l’**interaction** (des commandes flottantes en Liquid Glass).
+
+> **Nommage :** le produit s’appelle **Ink**. Le dépôt (`noto-ios`), le projet, la cible et le schéma Xcode (`Yportfolio`) ainsi que l’identifiant de bundle gardent leurs noms internes d’origine.
 
 ### Fonctionnalités
 
