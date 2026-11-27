@@ -75,42 +75,21 @@ struct NoteHasContentTests {
     }
 }
 
+
+
 @MainActor
-@Suite("Note highlights")
-struct NoteHighlightsTests {
+@Suite("Note share text")
+struct NoteShareTextTests {
 
-    private func highlights(_ body: String, limit: Int = 3) -> [String] {
-        Note(body: body).highlights(limit: limit)
+    @Test("Title and body are separated by a blank line, trimmed")
+    func titleAndBody() {
+        #expect(Note(title: "  Courses ", body: "Pain\nLait\n").shareText == "Courses\n\nPain\nLait")
     }
 
-    @Test("Body lines become highlights, list markers and blank lines removed")
-    func lines() {
-        #expect(highlights("- acheter du pain\n\n• Sport\n* Investir\nQuatrième") ==
-                ["Acheter du pain", "Sport", "Investir"])
-    }
-
-    @Test("A single comma-separated line is split into items")
-    func commaList() {
-        #expect(highlights("Pommes, lait d’amande, pâtes, tomates cerises…") ==
-                ["Pommes", "Lait d’amande", "Pâtes"])
-    }
-
-    @Test("A single paragraph is split into sentences")
-    func sentences() {
-        #expect(highlights("Itérer. Tester puis polir. Recommencer.", limit: 5) ==
-                ["Itérer", "Tester puis polir", "Recommencer"])
-    }
-
-    @Test("A blank body has no highlights")
-    func blank() {
-        #expect(highlights("  \n \t").isEmpty)
-    }
-}
-
-extension NoteHighlightsTests {
-    @Test("Sentences win over commas inside a paragraph")
-    func sentencesBeforeCommas() {
-        #expect(highlights("Iterate, test, and polish. The key is detail.") ==
-                ["Iterate, test, and polish", "The key is detail"])
+    @Test("Blank parts are omitted")
+    func blankParts() {
+        #expect(Note(title: "Seul titre", body: "  ").shareText == "Seul titre")
+        #expect(Note(title: "", body: "Seul corps").shareText == "Seul corps")
+        #expect(Note().shareText.isEmpty)
     }
 }
