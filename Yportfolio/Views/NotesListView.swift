@@ -8,7 +8,6 @@ struct NotesListView<Header: View>: View {
     var label: String? = nil
     let isSelecting: Bool
     @Binding var selection: Set<Note.ID>
-    @Binding var isHeaderCollapsed: Bool
     let zoomNamespace: Namespace.ID
     let onOpen: (Note) -> Void
     let onTogglePin: (Note) -> Void
@@ -36,7 +35,6 @@ struct NotesListView<Header: View>: View {
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .contentMargins(.bottom, DS.Spacing.lg, for: .scrollContent)
-        .tracksHeaderCollapse($isHeaderCollapsed)
     }
 
     private func sectionLabel(_ label: SectionLabel) -> some View {
@@ -72,7 +70,7 @@ struct NotesListView<Header: View>: View {
                 Button {
                     onTogglePin(note)
                 } label: {
-                    Label(note.isPinned ? "Désépingler" : "Épingler",
+                    Label(note.isPinned ? String(localized: "Unpin") : String(localized: "Pin"),
                           systemImage: note.isPinned ? "bookmark.slash.fill" : "bookmark.fill")
                 }
                 .tint(.orange)
@@ -83,11 +81,11 @@ struct NotesListView<Header: View>: View {
                 Button(role: .destructive) {
                     onDelete(note)
                 } label: {
-                    Label("Supprimer", systemImage: "trash")
+                    Label("Delete", systemImage: "trash")
                 }
             }
         }
-        .accessibilityValue(note.isPinned ? "Épinglée" : "")
+        .accessibilityValue(note.isPinned ? String(localized: "Pinned") : "")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
@@ -112,14 +110,6 @@ extension View {
             .listRowBackground(Color.clear)
     }
 
-    /// Reports whether the home header (display title) has scrolled under the top bar.
-    func tracksHeaderCollapse(_ isCollapsed: Binding<Bool>) -> some View {
-        onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top > 56
-        } action: { _, collapsed in
-            isCollapsed.wrappedValue = collapsed
-        }
-    }
 }
 
 extension Set {

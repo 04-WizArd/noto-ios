@@ -1,19 +1,25 @@
 import SwiftUI
 
-/// Home hero block, scrolling with the content: the large "Vos notes !" title,
-/// then the filter chips ("Toutes" with the note count, "Épinglées", "Récentes").
-/// (Avatar and greeting live in `HomeTopBar`, which stays on screen.)
+/// Home hero block, scrolling with the content: avatar and greeting (or the
+/// selection count while selecting), the large "Your notes!" title, then the
+/// filter chips ("All" with the note count, "Pinned", "Recent").
+/// The identity row keeps room on its right for the floating `HomeTopBar` control.
 struct HomeHeader: View {
     let totalCount: Int
     @Binding var filter: NoteFilter
     var showsFilters = true
+    /// Shown in place of the greeting while selecting.
+    var selectionSummary: String? = nil
 
     @ScaledMetric(relativeTo: .largeTitle) private var titleSize = DS.Typography.heroSize
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.lg) {
-            // Narrow no-break space before "!" (French typography).
-            Text("Vos notes\u{202F}!")
+            identityRow
+
+            // The French translation carries a narrow no-break space before "!".
+            Text("Your notes!")
                 .font(DS.Typography.display(titleSize))
                 .tracking(-1)
                 .foregroundStyle(.primary)
@@ -26,6 +32,70 @@ struct HomeHeader: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: Identity row
+
+    private var identityRow: some View {
+        HStack(spacing: DS.Spacing.sm) {
+            if let selectionSummary {
+                Text(selectionSummary)
+                    .font(.title3.weight(.semibold))
+                    .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            } else {
+                HomeAvatar()
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(Self.greeting + " 👋")
+                        .font(.subheadline.weight(.medium))
+                    // Locale-aware: "vendredi 27 novembre" / "Friday, November 27".
+                    Text(Date.now, format: .dateTime.weekday(.wide).day().month(.wide))
+                        .font(.title2)
+                }
+                .foregroundStyle(.primary)
+                // Wraps rather than truncating the date at accessibility sizes.
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .minimumScaleFactor(0.75)
+                .accessibilityElement(children: .combine)
+            }
+            // Room for the floating options circle laid over this row.
+            Spacer(minLength: DS.Control.headerCircle + DS.Spacing.sm)
+        }
+        .frame(minHeight: DS.Control.headerCircle)
+    }
+
+    /// Time-of-day greeting.
+    private static var greeting: String {
+        switch Calendar.current.component(.hour, from: .now) {
+        case 5..<12:  return String(localized: "Good morning")
+        case 12..<18: return String(localized: "Good afternoon")
+        default:      return String(localized: "Good evening")
+        }
+    }
+}
+
+/// Decorative identity disc of the home header. The app has no accounts, so it
+/// shows a generic silhouette on a soft gradient instead of a photo.
+struct HomeAvatar: View {
+    var body: some View {
+        Circle()
+            .fill(
+                LinearGradient(colors: [Color.indigo.mix(with: .white, by: 0.25), .purple, .pink.mix(with: .orange, by: 0.3)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            )
+            .overlay(alignment: .bottom) {
+                Image(systemName: "person.fill")
+                    .font(.system(size: 36, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .offset(y: 7)
+            }
+            .clipShape(Circle())
+            .overlay {
+                Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1)
+            }
+            .frame(width: DS.Control.headerCircle, height: DS.Control.headerCircle)
+            .accessibilityHidden(true)
     }
 }
 
@@ -55,13 +125,13 @@ struct FilterChips: View {
             ForEach(NoteFilter.allCases) { option in
                 chip(option)
                     .frame(maxWidth: stretch && option != .all ? .infinity : nil)
-                    // "Toutes" + its count never truncates; the others give way.
+                    // "All" + its count never truncates; the others give way.
                     .fixedSize(horizontal: option == .all, vertical: false)
             }
         }
     }
 
-    /// "Toutes" hugs its content; the other chips share the remaining width.
+    /// "All" hugs its content; the other chips share the remaining width.
     private func stretchesLabel(_ option: NoteFilter) -> Bool { option != .all }
 
     private func chip(_ option: NoteFilter) -> some View {
@@ -102,7 +172,7 @@ struct FilterChips: View {
             }
         }
         .buttonStyle(.card)
-        .accessibilityLabel(option == .all ? "\(option.title), \(totalCount) note\(totalCount == 1 ? "" : "s")" : option.title)
+        .accessibilityLabel(option == .all ? String(localized: "\(option.title), \(totalCount) notes") : option.title)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

@@ -8,11 +8,11 @@ struct FilterSheetPlaceholder: View {
     var body: some View {
         NavigationStack {
             ContentUnavailableView(
-                "Filtres",
+                "Filters",
                 systemImage: "line.3.horizontal.decrease.circle",
-                description: Text("Cette fonctionnalité sera disponible prochainement.")
+                description: Text("This feature will be available soon.")
             )
-            .navigationTitle("Filtrer")
+            .navigationTitle("Filter")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

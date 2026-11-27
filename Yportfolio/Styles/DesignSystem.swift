@@ -73,7 +73,7 @@ enum DS {
         /// Base size of the display titles (home + editor), scaled with Dynamic Type.
         static let displaySize: CGFloat = 40
         static func display(_ size: CGFloat) -> Font { .system(size: size, weight: .bold) }
-        /// Base size of the home hero title ("Vos notes !").
+        /// Base size of the home hero title ("Your notes!").
         static let heroSize: CGFloat = 46
 
         static let sectionLabel = Font.footnote.weight(.semibold)

@@ -13,6 +13,12 @@ struct NoteTile<Content: View>: View {
     /// of a row to the whole cell, so every card would open — and act on — the first
     /// card's menu. Those cards keep the pin control, selection and the VoiceOver action.
     var showsContextMenu = true
+    /// Corner holding the pin / selection control (cards showing only their bottom
+    /// strip — the featured deck — keep it in the visible part).
+    var controlAlignment: Alignment = .topTrailing
+    /// When tapping does something other than opening (bringing a deck card to the
+    /// front), VoiceOver still gets a direct "Open" action.
+    var accessibilityOpen: (() -> Void)? = nil
     let isSelecting: Bool
     @Binding var selection: Set<Note.ID>
     let zoomNamespace: Namespace.ID
@@ -31,7 +37,7 @@ struct NoteTile<Content: View>: View {
 
     var body: some View {
         control
-            .overlay(alignment: .topTrailing) {
+            .overlay(alignment: controlAlignment) {
                 Group {
                     if isSelecting {
                         SelectionIndicator(isSelected: isSelected)
@@ -44,10 +50,13 @@ struct NoteTile<Content: View>: View {
             }
             .accessibilityActions {
                 if !isSelecting {
-                    Button("Supprimer", role: .destructive) { onDelete(note) }
+                    if let accessibilityOpen {
+                        Button("Open", action: accessibilityOpen)
+                    }
+                    Button("Delete", role: .destructive) { onDelete(note) }
                 }
             }
-            .accessibilityValue(note.isPinned ? "Épinglée" : "")
+            .accessibilityValue(note.isPinned ? String(localized: "Pinned") : "")
             .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
@@ -83,13 +92,13 @@ struct NoteTile<Content: View>: View {
             Button {
                 onTogglePin(note)
             } label: {
-                Label(note.isPinned ? "Désépingler" : "Épingler",
+                Label(note.isPinned ? String(localized: "Unpin") : String(localized: "Pin"),
                       systemImage: note.isPinned ? "bookmark.slash" : "bookmark")
             }
             Button(role: .destructive) {
                 onDelete(note)
             } label: {
-                Label("Supprimer", systemImage: "trash")
+                Label("Delete", systemImage: "trash")
             }
         }
     }

@@ -7,6 +7,6 @@ enum NoteViewStyle {
     var toggled: NoteViewStyle { self == .list ? .gallery : .list }
 
     /// Label / icon of the button that switches *to the other* style.
-    var switchLabel: String { self == .list ? "Vue galerie" : "Vue liste" }
+    var switchLabel: String { self == .list ? String(localized: "Gallery view") : String(localized: "List view") }
     var switchIcon: String { self == .list ? "square.grid.2x2" : "list.bullet" }
 }

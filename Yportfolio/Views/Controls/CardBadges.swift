@@ -22,7 +22,7 @@ struct PinToggle: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.borderless)
-        .accessibilityLabel(isPinned ? "Désépingler" : "Épingler")
+        .accessibilityLabel(isPinned ? String(localized: "Unpin") : String(localized: "Pin"))
     }
 }
 

@@ -1,12 +1,20 @@
 import SwiftUI
 import SwiftData
 
-/// Home dashboard: the first notes of the current filter and sort, composed like
-/// a widget stack — one tall featured card on the left, a visual card and a
-/// compact card stacked on the right. At accessibility text sizes the cards
-/// stack in one column at their natural height.
+/// Home "featured deck": the first notes of the current filter and sort, as a
+/// numbered stack of cards seen from above.
+///
+/// - The front card shows the priority note in full: its large rank numeral in the
+///   note's accent, title, preview and relative date.
+/// - The other notes sit behind it, each one a little narrower, and show only their
+///   bottom strip (rank, title, bookmark) tinted with their accent.
+/// - Reading top to bottom follows the priority order (01, 02, 03).
+///
+/// Tapping the front card opens the note (zoom transition); tapping a strip brings
+/// that note to the front. Cards fan out from behind the front card when the deck
+/// appears; with Reduce Motion everything is simply in place.
 struct HomeDashboard: View {
-    /// One to three notes, in display order.
+    /// One to three notes, in priority order.
     let notes: [Note]
     /// `false` when the dashboard is hosted in a `List` row (see `NoteTile.showsContextMenu`).
     var showsContextMenus = true
@@ -17,304 +25,195 @@ struct HomeDashboard: View {
     let onTogglePin: (Note) -> Void
     let onDelete: (Note) -> Void
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ScaledMetric(relativeTo: .body) private var height: CGFloat = 322
-    @ScaledMetric(relativeTo: .body) private var compactHeight: CGFloat = 132
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric(relativeTo: .body) private var cardHeight: CGFloat = 212
+    @ScaledMetric(relativeTo: .headline) private var stripHeight: CGFloat = 54
+
+    /// Note brought to the front by the user (view state only; reset when the
+    /// featured notes or their order change).
+    @State private var frontID: Note.ID?
+    /// Cards start gathered behind the front card, then fan out once.
+    @State private var isFannedOut = false
 
     static let maxCount = 3
-    private let gap: CGFloat = 12
+    /// Width lost by each card on each side, per level of depth.
+    private let depthInset: CGFloat = 14
+    /// How far a back card slips under the card in front of it: enough to fill
+    /// the rounded corners above its strip, so the stack reads as continuous.
+    private let tuck: CGFloat = DS.Radius.card
+
+    /// Display order: the chosen front note first, then the others by priority.
+    private var deck: [Note] {
+        guard let frontID, let index = notes.firstIndex(where: { $0.id == frontID }) else { return notes }
+        var rest = notes
+        let front = rest.remove(at: index)
+        return [front] + rest
+    }
+
+    private var motion: Animation? {
+        reduceMotion ? nil : .spring(duration: 0.5, bounce: 0.16)
+    }
 
     var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            VStack(spacing: gap) {
-                ForEach(Array(notes.enumerated()), id: \.element.id) { index, note in
-                    tile(note, style: Style(index))
-                        .frame(minHeight: index == 1 ? 180 : nil)
-                }
+        let deck = deck
+        ZStack(alignment: .top) {
+            // Back cards first: the front card is drawn last, on top.
+            ForEach(Array(deck.enumerated().reversed()), id: \.element.id) { depth, note in
+                card(note, depth: depth)
+                    .zIndex(Double(deck.count - depth))
             }
+        }
+        .frame(height: cardHeight + CGFloat(deck.count - 1) * stripHeight, alignment: .top)
+        .animation(motion, value: deck.map(\.id))
+        .onChange(of: notes.map(\.id)) { _, _ in frontID = nil }
+        .onAppear(perform: fanOut)
+    }
+
+    // MARK: Card
+
+    /// Back cards are only as tall as what shows of them (strip + tuck), so their
+    /// touch and accessibility frames match the visible strip; bringing one to the
+    /// front animates its height from the strip to the full card.
+    private func card(_ note: Note, depth: Int) -> some View {
+        let isFront = depth == 0
+        // Gathered: every back card hides exactly behind the front card's bottom edge.
+        let level = CGFloat(isFannedOut ? depth : 0)
+        let height = isFront ? cardHeight : stripHeight + tuck
+        let y = isFront ? 0 : cardHeight - tuck + (level - 1) * stripHeight
+        let rank = (notes.firstIndex { $0.id == note.id } ?? depth) + 1
+        return NoteTile(
+            note: note,
+            showsContextMenu: showsContextMenus,
+            controlAlignment: isFront ? .topTrailing : .bottomTrailing,
+            accessibilityOpen: isFront ? nil : { onOpen(note) },
+            isSelecting: isSelecting, selection: $selection, zoomNamespace: zoomNamespace,
+            onOpen: isFront ? onOpen : bringToFront,
+            onTogglePin: onTogglePin, onDelete: onDelete
+        ) {
+            DeckCard(note: note, rank: rank, isFront: isFront, stripHeight: stripHeight)
+        }
+        .frame(height: height)
+        .padding(.horizontal, CGFloat(depth) * depthInset)
+        .offset(y: y)
+        .accessibilityHint(isFront ? "" : String(localized: "Brings this note to the front."))
+    }
+
+    // MARK: Motion
+
+    private func bringToFront(_ note: Note) {
+        withAnimation(motion) { frontID = note.id }
+    }
+
+    private func fanOut() {
+        guard !isFannedOut else { return }
+        if reduceMotion {
+            isFannedOut = true
         } else {
-            HStack(spacing: gap) {
-                if let first = notes.first {
-                    tile(first, style: .featured)
-                }
-                if notes.count > 1 {
-                    VStack(spacing: gap) {
-                        tile(notes[1], style: .visual)
-                        if notes.count > 2 {
-                            tile(notes[2], style: .compact)
-                                .frame(height: compactHeight)
-                        }
-                    }
-                }
-            }
-            .frame(height: notes.count == 1 ? height * 0.75 : height)
-        }
-    }
-
-    // MARK: Tiles
-
-    enum Style {
-        case featured, visual, compact
-
-        init(_ index: Int) {
-            self = [.featured, .visual, .compact][min(index, 2)]
-        }
-    }
-
-    private func tile(_ note: Note, style: Style) -> some View {
-        NoteTile(note: note, cornerRadius: DS.Radius.hero, showsContextMenu: showsContextMenus,
-                 isSelecting: isSelecting, selection: $selection, zoomNamespace: zoomNamespace,
-                 onOpen: onOpen, onTogglePin: onTogglePin, onDelete: onDelete) {
-            switch style {
-            case .featured: FeaturedNoteCard(note: note)
-            case .visual:   VisualNoteCard(note: note)
-            case .compact:  CompactNoteCard(note: note)
-            }
+            withAnimation(.spring(duration: 0.6, bounce: 0.14).delay(0.12)) { isFannedOut = true }
         }
     }
 }
 
-// MARK: - Featured card
+// MARK: - Deck card
 
-/// Tall card: the title set large in a monospaced heavy face, centred, with the
-/// note's first lines as pills underneath (the first one highlighted).
-struct FeaturedNoteCard: View {
+/// One card of the deck. In front: the full note. Behind: only its bottom strip
+/// is visible, so that is all it draws.
+struct DeckCard: View {
     let note: Note
-
-    @ScaledMetric(relativeTo: .title) private var titleSize: CGFloat = 26
-
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: DS.Radius.hero, style: .continuous)
-    }
-
-    var body: some View {
-        let lines = note.highlights()
-        VStack(spacing: 0) {
-            Spacer(minLength: 36)   // keeps the title clear of the pin control
-
-            Text(note.displayTitle.uppercased())
-                .font(.system(size: titleSize, weight: .heavy, design: .monospaced))
-                .tracking(1)
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
-                .minimumScaleFactor(0.55)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, DS.Spacing.xs)
-                .accessibilityLabel(note.displayTitle)
-
-            Spacer(minLength: DS.Spacing.md)
-
-            VStack(spacing: DS.Spacing.xs) {
-                if lines.isEmpty {
-                    LinePill(text: note.shortModifiedDate, systemImage: "clock", accent: note.accent.color)
-                } else {
-                    ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
-                        LinePill(text: line, number: index + 1, highlighted: index == 0,
-                                 accent: note.accent.color)
-                    }
-                }
-            }
-        }
-        .padding(DS.Spacing.sm)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DS.Surface.raised, in: shape)
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// One line of the featured card: a capsule with a numbered disc and the text.
-struct LinePill: View {
-    let text: String
-    var number: Int? = nil
-    var systemImage: String? = nil
-    var highlighted = false
-    let accent: Color
-
-    @ScaledMetric(relativeTo: .subheadline) private var discSize: CGFloat = 24
-
-    var body: some View {
-        HStack(spacing: 7) {
-            ZStack {
-                if highlighted {
-                    Circle().fill(accent.opacity(0.22))
-                } else {
-                    Circle().strokeBorder(Color.secondary.opacity(0.5), lineWidth: 1.2)
-                }
-                Group {
-                    if let number {
-                        Text(number, format: .number)
-                    } else if let systemImage {
-                        Image(systemName: systemImage)
-                    }
-                }
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(highlighted ? accent : Color.secondary)
-            }
-            .frame(width: discSize, height: discSize)
-            .accessibilityHidden(true)
-
-            Text(text)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.leading, 8)
-        .padding(.trailing, 10)
-        .frame(minHeight: 44)
-        .background(DS.Surface.inset.opacity(highlighted ? 1 : 0.65), in: Capsule())
-        .overlay {
-            Capsule().strokeBorder(DS.Surface.hairline, lineWidth: 1)
-                .opacity(highlighted ? 1 : 0)
-        }
-    }
-}
-
-// MARK: - Visual card
-
-/// Image-like card: a soft mesh of the note's colours (standing in for a picture),
-/// with the title and a relative date over a gentle shade.
-struct VisualNoteCard: View {
-    let note: Note
+    let rank: Int
+    let isFront: Bool
+    let stripHeight: CGFloat
 
     @Environment(\.colorScheme) private var colorScheme
 
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+    }
+
+    /// "01", "02", "03": the deck's signature, set in the note's accent.
+    private var rankLabel: String { String(format: "%02d", rank) }
+
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            NoteMesh(accent: note.accent, scheme: colorScheme)
-
-            LinearGradient(colors: [.clear, .black.opacity(0.38)], startPoint: .center, endPoint: .bottom)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(note.displayTitle)
-                    .font(.body.weight(.semibold))
-                    .lineLimit(2)
-                Text(note.modifiedAt, format: .relative(presentation: .named, unitsStyle: .abbreviated))
-                    .font(.subheadline)
-                    .opacity(0.85)
+        ZStack(alignment: .bottom) {
+            if isFront {
+                front.transition(.opacity)
+            } else {
+                strip.transition(.opacity)
             }
-            .foregroundStyle(.white)
-            .shadow(color: .black.opacity(0.2), radius: 6, y: 1)
-            .padding(18)
-            .padding(.trailing, DS.Spacing.lg)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.hero, style: .continuous))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .background { surface }
+        .clipShape(shape)
+        .overlay {
+            // Dark Mode: a hairline edge separates the stacked cards.
+            shape.strokeBorder(Color.white.opacity(colorScheme == .dark ? 0.09 : 0), lineWidth: 1)
+        }
+        // Light Mode: each card casts a soft shadow onto the one behind it.
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.08), radius: 12, y: 6)
+        .contentShape(shape)
         .accessibilityElement(children: .combine)
     }
-}
 
-/// Blurred, iridescent wash built from a note's accent and a companion hue.
-struct NoteMesh: View {
-    let accent: NoteAccent
-    let scheme: ColorScheme
-
-    var body: some View {
-        let a = accent.color
-        let b = accent.companion.color
-        let depth: CGFloat = scheme == .dark ? 0.55 : 0.35
-        MeshGradient(
-            width: 3, height: 3,
-            points: [
-                [0, 0], [0.5, 0], [1, 0],
-                [0, 0.5], [0.62, 0.4], [1, 0.55],
-                [0, 1], [0.45, 1], [1, 1],
-            ],
-            colors: [
-                a.mix(with: .white, by: 0.45), b.mix(with: .white, by: 0.2), a.mix(with: .black, by: depth * 0.6),
-                b.mix(with: .white, by: 0.55), .white.mix(with: a, by: 0.25), a,
-                a.mix(with: .black, by: depth), b.mix(with: .black, by: depth * 0.8), a.mix(with: .black, by: depth + 0.1),
-            ],
-            smoothsColors: true
-        )
-    }
-}
-
-private extension NoteAccent {
-    /// Second hue of the mesh, chosen to sit next to the accent on the colour wheel.
-    var companion: NoteAccent {
-        switch self {
-        case .blue:   return .purple
-        case .green:  return .teal
-        case .orange: return .pink
-        case .indigo: return .pink
-        case .pink:   return .orange
-        case .teal:   return .blue
-        case .purple: return .indigo
-        case .mint:   return .blue
+    /// Opaque surfaces (cards overlap): neutral in front, the note's tint behind.
+    @ViewBuilder
+    private var surface: some View {
+        if isFront {
+            DS.Surface.raised
+        } else {
+            ZStack {
+                DS.Surface.background
+                DS.Surface.tint(note.accent.color, colorScheme)
+            }
         }
     }
-}
 
-// MARK: - Compact card
-
-/// Small card: two sheets of paper fanned out (the note as a document), and the
-/// title beside a document badge.
-struct CompactNoteCard: View {
-    let note: Note
-
-    @ScaledMetric(relativeTo: .subheadline) private var badgeSize: CGFloat = 40
-
-    var body: some View {
+    private var front: some View {
         VStack(alignment: .leading, spacing: 0) {
-            PaperStack(accent: note.accent.color)
-                .frame(maxWidth: .infinity, minHeight: 50, maxHeight: .infinity)
-                .padding(.top, DS.Spacing.xxs)
+            Text(rankLabel)
+                .font(.system(size: 34, weight: .heavy, design: .monospaced))
+                .foregroundStyle(note.accent.color)
+                .accessibilityHidden(true)
 
-            HStack(spacing: 10) {
-                Image(systemName: "doc.text")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .frame(width: badgeSize, height: badgeSize)
-                    .background(DS.Surface.inset, in: Circle())
-                    .overlay { Circle().strokeBorder(DS.Surface.hairline, lineWidth: 1) }
-                    .accessibilityHidden(true)
+            Spacer(minLength: DS.Spacing.sm)
 
-                Text(note.displayTitle)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
+            Text(note.displayTitle)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+
+            if !note.bodyPreview.isEmpty {
+                Text(note.bodyPreview)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, DS.Spacing.xxs)
             }
-        }
-        .padding(DS.Spacing.sm)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DS.Surface.raised, in: RoundedRectangle(cornerRadius: DS.Radius.hero, style: .continuous))
-        .accessibilityElement(children: .combine)
-    }
-}
 
-/// Two fanned sheets: a coloured one behind, a white one with text lines in front.
-private struct PaperStack: View {
-    let accent: Color
-
-    var body: some View {
-        ZStack {
-            sheet(fill: accent, lines: .white.opacity(0.75))
-                .rotationEffect(.degrees(-12))
-                .offset(x: -11, y: 2)
-            sheet(fill: DS.Surface.inset, lines: Color.secondary.opacity(0.45))
-                .rotationEffect(.degrees(9))
-                .offset(x: 11)
-                .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+            // Locale-aware: "il y a 6 heures", "hier" / "6 hours ago", "yesterday".
+            Text(note.modifiedAt, format: .relative(presentation: .named, unitsStyle: .wide))
+                .font(DS.Typography.metadata)
+                .foregroundStyle(.secondary)
+                .padding(.top, DS.Spacing.sm)
         }
-        .accessibilityHidden(true)
+        .padding(DS.Spacing.lg)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private func sheet(fill: some ShapeStyle, lines: Color) -> some View {
-        RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .fill(fill)
-            .frame(width: 34, height: 44)
-            .overlay(alignment: .topLeading) {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array([20.0, 16, 20, 12].enumerated()), id: \.offset) { _, width in
-                        Capsule().fill(lines).frame(width: width, height: 2.5)
-                    }
-                }
-                .padding(7)
-            }
+    private var strip: some View {
+        HStack(spacing: DS.Spacing.sm) {
+            Text(rankLabel)
+                .font(.system(size: 15, weight: .heavy, design: .monospaced))
+                .foregroundStyle(note.accent.color.mix(with: .primary, by: 0.25))
+                .accessibilityHidden(true)
+            Text(note.displayTitle)
+                .font(.headline)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+            // Room for the bookmark control in the strip's trailing corner.
+            Spacer(minLength: 44)
+        }
+        .padding(.horizontal, 18)
+        .frame(height: stripHeight)
     }
 }
 
@@ -324,7 +223,11 @@ private struct PaperStack: View {
     @Previewable @Query(sort: \Note.modifiedAt, order: .reverse) var notes: [Note]
     @Previewable @Namespace var ns
     @Previewable @State var selection = Set<Note.ID>()
-    HomeDashboard(notes: Array(notes.prefix(3)), isSelecting: false, selection: $selection,
-                  zoomNamespace: ns, onOpen: { _ in }, onTogglePin: { _ in }, onDelete: { _ in })
-        .padding()
+    VStack(spacing: 40) {
+        HomeDashboard(notes: Array(notes.prefix(3)), isSelecting: false, selection: $selection,
+                      zoomNamespace: ns, onOpen: { _ in }, onTogglePin: { _ in }, onDelete: { _ in })
+        HomeDashboard(notes: Array(notes.prefix(1)), isSelecting: false, selection: $selection,
+                      zoomNamespace: ns, onOpen: { _ in }, onTogglePin: { _ in }, onDelete: { _ in })
+    }
+    .padding()
 }

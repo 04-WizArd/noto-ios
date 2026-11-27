@@ -4,8 +4,8 @@ import SwiftData
 /// Notes home screen.
 ///
 /// Owns the screen state (filter, search, sort, layout, selection, navigation) and composes:
-/// - `HomeTopBar` (floating): avatar, greeting + glass options circle;
-/// - the content, scrolling: `HomeHeader` (hero title, filter chips), `HomeDashboard`
+/// - `HomeTopBar` (floating, no bar behind it): the glass options circle;
+/// - the content, scrolling: `HomeHeader` (avatar, greeting, hero title, filter chips), `HomeDashboard`
 ///   (the first three notes as featured cards), `CapturePromptCard`, then the other
 ///   notes in `NotesListView` or `NotesGalleryView`;
 /// - `HomeBottomBar` (floating): the dock (compose, search, layout), the search
@@ -38,8 +38,6 @@ struct ContentView: View {
     @State private var isSelecting = false
     @State private var selection = Set<Note.ID>()
     @State private var showBatchDeleteConfirm = false
-
-    @State private var isHeaderCollapsed = false
 
     /// Note just created from the compose button: its editor zooms out of that button.
     @State private var composedNote: ObjectIdentifier?
@@ -88,11 +86,13 @@ struct ContentView: View {
     var body: some View {
         NavigationStack(path: $path) {
             content
-                // No band behind the dock: its controls float directly over the content.
-                // (The top keeps the system edge effect, for the header's legibility.)
-                .scrollEdgeEffectHidden(true, for: .bottom)
+                // No band behind the floating controls, top or bottom: they sit
+                // directly over the content.
+                .scrollEdgeEffectHidden(true, for: .all)
                 .background(DS.Surface.background.ignoresSafeArea())
-                .safeAreaBar(edge: .top) { topBar }
+                // An overlay, not a bar: the control floats over the header's identity
+                // row (which keeps room for it) and over the content as it scrolls.
+                .overlay(alignment: .top) { topBar }
                 .safeAreaBar(edge: .bottom) {
                     // Out of the way while typing a quick note.
                     if !isCaptureFocused {
@@ -114,7 +114,7 @@ struct ContentView: View {
         .sensoryFeedback(.impact(weight: .medium), trigger: deleteFeedback)
         .sensoryFeedback(.success, trigger: captureFeedback)
         // Persistence failures reported by NotesViewModel (from any screen)
-        .alert("Enregistrement impossible", isPresented: isShowingError) {
+        .alert("Couldn't save", isPresented: isShowingError) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(viewModel.lastError?.localizedDescription ?? "")
@@ -143,7 +143,7 @@ struct ContentView: View {
         let ordered = orderedNotes
         let featured = showsDashboard ? Array(ordered.prefix(HomeDashboard.maxCount)) : []
         let remaining = Array(ordered.dropFirst(featured.count))
-        let label = showsDashboard ? "Autres notes" : "Résultats"
+        let label = showsDashboard ? String(localized: "Other notes") : String(localized: "Results")
         ZStack {
             if ordered.isEmpty {
                 messageContent
@@ -153,16 +153,14 @@ struct ContentView: View {
                 case .list:
                     NotesListView(
                         notes: remaining, label: label,
-                        isSelecting: isSelecting, selection: $selection,
-                        isHeaderCollapsed: $isHeaderCollapsed, zoomNamespace: zoomNamespace,
+                        isSelecting: isSelecting, selection: $selection, zoomNamespace: zoomNamespace,
                         onOpen: open, onTogglePin: togglePin, onDelete: deleteNote
                     ) { header(featured: featured) }
                     .transition(viewSwitchTransition)
                 case .gallery:
                     NotesGalleryView(
                         notes: remaining, label: label,
-                        isSelecting: isSelecting, selection: $selection,
-                        isHeaderCollapsed: $isHeaderCollapsed, zoomNamespace: zoomNamespace,
+                        isSelecting: isSelecting, selection: $selection, zoomNamespace: zoomNamespace,
                         onOpen: open, onTogglePin: togglePin, onDelete: deleteNote
                     ) { header(featured: featured) }
                     .transition(viewSwitchTransition)
@@ -178,7 +176,8 @@ struct ContentView: View {
     /// Everything above the remaining notes: hero, filters, dashboard, capture.
     private func header(featured: [Note]) -> some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xl - 4) {
-            HomeHeader(totalCount: notes.count, filter: $filter)
+            HomeHeader(totalCount: notes.count, filter: $filter,
+                       selectionSummary: isSelecting ? selectionSummary : nil)
 
             if !featured.isEmpty {
                 HomeDashboard(
@@ -212,25 +211,26 @@ struct ContentView: View {
                     captureCard
                     HomeMessageCard(
                         systemImage: "square.and.pencil",
-                        title: "Aucune note",
-                        message: "Vos idées, listes et brouillons trouveront leur place ici."
+                        title: String(localized: "No notes"),
+                        message: String(localized: "Your ideas, lists and drafts will find their place here.")
                     ) {
-                        GlassPillButton(title: "Créer une note", prominent: true, action: createNote)
+                        GlassPillButton(title: String(localized: "Create a note"), prominent: true, action: createNote)
                             .padding(.top, DS.Spacing.xs)
                     }
                 } else if !searchText.isEmpty {
                     HomeMessageCard(
                         systemImage: "magnifyingglass",
-                        title: "Aucun résultat",
-                        message: "Aucune note ne correspond à « \(searchText) »."
+                        title: String(localized: "No results"),
+                        message: String(localized: "No notes match “\(searchText)”.")
                     )
                 } else {
                     HomeMessageCard(
                         systemImage: filter == .pinned ? "bookmark" : "clock",
-                        title: filter == .pinned ? "Aucune note épinglée" : "Rien de récent",
+                        title: filter == .pinned ? String(localized: "No pinned notes")
+                                                 : String(localized: "Nothing recent"),
                         message: filter == .pinned
-                            ? "Épinglez une note pour la garder en tête de liste."
-                            : "Les notes modifiées ces sept derniers jours apparaîtront ici."
+                            ? String(localized: "Pin a note to keep it at the top.")
+                            : String(localized: "Notes edited in the last seven days will appear here.")
                     )
                 }
             }
@@ -240,7 +240,6 @@ struct ContentView: View {
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
-        .tracksHeaderCollapse($isHeaderCollapsed)
     }
 
     /// List ↔ gallery: the incoming layout rises slightly while fading in.
@@ -255,8 +254,6 @@ struct ContentView: View {
     private var topBar: some View {
         HomeTopBar(
             isSelecting: isSelecting,
-            selectionSummary: selectionSummary,
-            isCollapsed: isHeaderCollapsed,
             hasNotes: !notes.isEmpty,
             sortOrder: $sortOrder,
             onBeginSelection: beginSelection,
@@ -285,23 +282,21 @@ struct ContentView: View {
     }
 
     private var selectionSummary: String {
-        switch selectedNotes.count {
-        case 0:     return "Aucune note sélectionnée"
-        case 1:     return "1 note sélectionnée"
-        case let n: return "\(n) notes sélectionnées"
-        }
+        let count = selectedNotes.count
+        return count == 0 ? String(localized: "No notes selected")
+                          : String(localized: "\(count) notes selected")
     }
 
     private var batchDeleteTitle: String {
         let count = selectedNotes.count
-        return count == 1 ? "Supprimer la note" : "Supprimer les \(count) notes"
+        return count == 1 ? String(localized: "Delete note") : String(localized: "Delete \(count) notes")
     }
 
     /// Hidden until filters are implemented (the sheet is only a placeholder).
     /// To restore, give it a place in the home top bar.
     private var filterMenuItem: some View {
         Button { showFilters = true } label: {
-            Label("Filtrer les notes", systemImage: "line.3.horizontal.decrease.circle")
+            Label("Filter notes", systemImage: "line.3.horizontal.decrease.circle")
         }
     }
 

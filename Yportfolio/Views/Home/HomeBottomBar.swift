@@ -7,7 +7,7 @@ import SwiftUI
 /// compose (solid, the screen's one prominent action) and search; a smaller glass
 /// circle beside it switches between list and gallery.
 /// Searching: a glass search field and a close button.
-/// Selecting: "Tout sélectionner" + delete.
+/// Selecting: "Select all" + delete.
 struct HomeBottomBar: View {
     @Binding var searchText: String
     var isSearchFocused: FocusState<Bool>.Binding
@@ -116,9 +116,9 @@ struct HomeBottomBar: View {
         }
         .buttonStyle(.dock)
         .matchedTransitionSource(id: ComposeZoomSource.id, in: zoomNamespace)
-        .accessibilityLabel("Nouvelle note")
+        .accessibilityLabel("New note")
         .accessibilityShowsLargeContentViewer {
-            Label("Nouvelle note", systemImage: "plus")
+            Label("New note", systemImage: "plus")
         }
     }
 
@@ -135,9 +135,9 @@ struct HomeBottomBar: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.dock)
-        .accessibilityLabel("Rechercher")
+        .accessibilityLabel("Search")
         .accessibilityShowsLargeContentViewer {
-            Label("Rechercher", systemImage: "magnifyingglass")
+            Label("Search", systemImage: "magnifyingglass")
         }
     }
 
@@ -146,7 +146,7 @@ struct HomeBottomBar: View {
     private var searchControls: some View {
         HStack(spacing: DS.Spacing.sm) {
             searchField
-            GlassCircleButton(title: "Fermer la recherche", systemImage: "xmark") {
+            GlassCircleButton(title: String(localized: "Close search"), systemImage: "xmark") {
                 searchText = ""
                 isSearchFocused.wrappedValue = false
                 isSearching = false
@@ -164,13 +164,13 @@ struct HomeBottomBar: View {
                 .accessibilityHidden(true)
 
             // The field fills the capsule, so any tap on it focuses natively.
-            TextField("Rechercher", text: $searchText)
+            TextField("Search", text: $searchText)
                 .font(.body)
                 .frame(maxWidth: .infinity, minHeight: DS.Control.height)
                 .focused(isSearchFocused)
                 .submitLabel(.search)
                 .autocorrectionDisabled()
-                .accessibilityLabel("Rechercher dans les notes")
+                .accessibilityLabel("Search notes")
 
             if !searchText.isEmpty {
                 Button {
@@ -183,7 +183,7 @@ struct HomeBottomBar: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Effacer la recherche")
+                .accessibilityLabel("Clear search")
                 .transition(.opacity.combined(with: .scale(scale: 0.6)))
             }
         }
@@ -200,12 +200,12 @@ struct HomeBottomBar: View {
 
     private var selectionControls: some View {
         HStack(spacing: DS.Spacing.sm) {
-            GlassPillButton(title: allSelected ? "Tout désélectionner" : "Tout sélectionner",
+            GlassPillButton(title: allSelected ? String(localized: "Deselect all") : String(localized: "Select all"),
                             action: onToggleSelectAll)
 
             Spacer(minLength: 0)
 
-            GlassCircleButton(title: "Supprimer les notes sélectionnées", systemImage: "trash",
+            GlassCircleButton(title: String(localized: "Delete selected notes"), systemImage: "trash",
                               role: .destructive) {
                 showDeleteConfirm = true
             }
@@ -213,9 +213,9 @@ struct HomeBottomBar: View {
             // Attached to the button so the popover points at it.
             .confirmationDialog(deleteTitle, isPresented: $showDeleteConfirm, titleVisibility: .visible) {
                 Button(deleteTitle, role: .destructive, action: onConfirmDelete)
-                Button("Annuler", role: .cancel) {}
+                Button("Cancel", role: .cancel) {}
             } message: {
-                Text("Cette action est irréversible.")
+                Text("This action can't be undone.")
             }
         }
         .padding(.horizontal, DS.Spacing.screen)

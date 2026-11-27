@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Quick capture: "Que voulez-vous noter ?" — type a line and send it to save it
+/// Quick capture: "What would you like to note?" — type a line and send it to save it
 /// as a new note without leaving the home screen.
 struct CapturePromptCard: View {
     @Binding var text: String
@@ -15,7 +15,7 @@ struct CapturePromptCard: View {
 
     var body: some View {
         HStack(spacing: DS.Spacing.sm) {
-            TextField("Que voulez-vous noter ?", text: $text)
+            TextField("What would you like to note?", text: $text)
                 .font(.body.weight(.medium))
                 .foregroundStyle(.primary)
                 .focused(isFocused)
@@ -38,7 +38,7 @@ struct CapturePromptCard: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.card)
-            .accessibilityLabel(isBlank ? "Écrire une note rapide" : "Enregistrer la note")
+            .accessibilityLabel(isBlank ? String(localized: "Write a quick note") : String(localized: "Save note"))
         }
         .padding(.leading, 22)
         .padding(.trailing, 13)

@@ -91,10 +91,11 @@ struct GlassCircleButton: View {
     }
 }
 
-/// A text pill on glass (e.g. "Terminé", "Annuler", "Tout sélectionner"), 52 pt tall.
+/// A text pill on glass (e.g. "Done", "Cancel", "Select all"), 52 pt tall by default.
 struct GlassPillButton: View {
     let title: String
     var prominent = false
+    var height: CGFloat = DS.Control.height
     let action: () -> Void
 
     var body: some View {
@@ -104,7 +105,7 @@ struct GlassPillButton: View {
                 .foregroundStyle(prominent ? DS.Surface.background : Color.primary)
                 .lineLimit(1)
                 .padding(.horizontal, 22)
-                .frame(minHeight: DS.Control.height)
+                .frame(minHeight: height)
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -117,18 +118,18 @@ struct GlassPillButton: View {
 #Preview {
     VStack(spacing: 24) {
         HStack {
-            GlassCircleButton(title: "Retour", systemImage: "chevron.left") {}
+            GlassCircleButton(title: "Back", systemImage: "chevron.left") {}
             Spacer()
             ControlIsland {
-                Button("Épingler", systemImage: "bookmark") {}
-                Button("Supprimer", systemImage: "trash") {}
+                Button("Pin", systemImage: "bookmark") {}
+                Button("Delete", systemImage: "trash") {}
             }
         }
         HStack {
-            GlassPillButton(title: "Tout sélectionner") {}
+            GlassPillButton(title: "Select all") {}
             Spacer()
-            GlassPillButton(title: "Terminé", prominent: true) {}
-            GlassCircleButton(title: "Nouvelle note", systemImage: "plus", prominent: true) {}
+            GlassPillButton(title: "Done", prominent: true) {}
+            GlassCircleButton(title: "New note", systemImage: "plus", prominent: true) {}
         }
     }
     .padding()

@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// List card: neutral raised surface (the list is the calm, dense reading mode;
-/// colour is reserved for the gallery), title, two-line preview, accent dot + date.
+/// colour is reserved for the gallery), title, two-line preview, date.
 /// The top-trailing corner is left free for the pin / selection control.
 struct NoteRowView: View {
     let note: Note
@@ -20,21 +20,15 @@ struct NoteRowView: View {
                 .lineLimit(1)
                 .padding(.trailing, 34)   // pin control
 
-            Text(note.bodyPreview.isEmpty ? "Pas de texte supplémentaire" : note.bodyPreview)
+            Text(note.bodyPreview.isEmpty ? String(localized: "No additional text") : note.bodyPreview)
                 .font(DS.Typography.preview)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
 
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(note.accent.color)
-                    .frame(width: 7, height: 7)
-                    .accessibilityHidden(true)
-                Text(note.shortModifiedDate)
-                    .font(DS.Typography.metadata)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.top, 4)
+            Text(note.shortModifiedDate)
+                .font(DS.Typography.metadata)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
         }
         .padding(.vertical, DS.Spacing.md)
         .padding(.horizontal, 18)

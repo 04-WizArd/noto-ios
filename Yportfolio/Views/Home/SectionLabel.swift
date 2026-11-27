@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Quiet editorial section label ("ÉPINGLÉES  2"): structure without competing
+/// Quiet editorial section label ("OTHER NOTES  2"): structure without competing
 /// with the display title or the cards.
 struct SectionLabel: View {
     let title: String
@@ -24,7 +24,7 @@ struct SectionLabel: View {
         .foregroundStyle(Color.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(title), \(count) note\(count == 1 ? "" : "s")")
+        .accessibilityLabel(String(localized: "\(title), \(count) notes"))
         .accessibilityAddTraits(.isHeader)
     }
 }

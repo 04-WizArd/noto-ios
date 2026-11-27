@@ -10,9 +10,9 @@ enum NoteSortOrder: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .dateModified: return "Date de modification"
-        case .dateCreated:  return "Date de création"
-        case .title:        return "Titre"
+        case .dateModified: return String(localized: "Date modified")
+        case .dateCreated:  return String(localized: "Date created")
+        case .title:        return String(localized: "Title")
         }
     }
 

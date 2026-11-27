@@ -8,7 +8,6 @@ struct NotesGalleryView<Header: View>: View {
     var label: String? = nil
     let isSelecting: Bool
     @Binding var selection: Set<Note.ID>
-    @Binding var isHeaderCollapsed: Bool
     let zoomNamespace: Namespace.ID
     let onOpen: (Note) -> Void
     let onTogglePin: (Note) -> Void
@@ -47,7 +46,6 @@ struct NotesGalleryView<Header: View>: View {
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
-        .tracksHeaderCollapse($isHeaderCollapsed)
         .animation(DS.Motion.standard(reduceMotion), value: notes.map(\.id))
     }
 
